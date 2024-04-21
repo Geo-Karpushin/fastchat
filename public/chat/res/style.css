@@ -40,7 +40,11 @@ body {
     height: 65%;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+}
+
+.icon{
+	height:20px;
 }
 
 #footer{
@@ -82,11 +86,19 @@ body {
 #in{
 	display: contents;
 	font-family: 'Mulish'; 
+	display: inline-flex;
+    width: 80%;
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    align-items: center;
+    align-content: center;
+	margin-bottom: 1%;
 }
 
 #inFiles{
-	margin: 0.25%;
-	font-family: 'Mulish'; 
+	opacity: 0;
+	position: absolute;
+	z-index: -1;
 }
 
 @keyframes gradient {
@@ -108,6 +120,29 @@ body {
 
 #file-url:hover{
 	text-decoration:underline lightskyblue;
+}
+
+.icon-button{
+	padding-top: 0.4%;
+	background: #00000054;
+    min-height: 25px;
+    border-radius: 3px;
+    top: 26%;
+    left: 6%;
+    font-size: 0.9em;
+    color: #ffffffde;
+    font-weight: 500;
+    transform-origin: 0 0;
+    transform: translate3d(0, 0, 0);
+    transition: all 0.2s ease;
+    border: 0;
+    box-shadow: inset 0 -1px 0 rgb(0 0 0 / 30%);
+	font-family: 'Mulish';
+}
+
+.icon-button:hover{
+	background: #3b441a;
+	color: white;
 }
 
 #messages-content
@@ -144,8 +179,7 @@ body {
 }
 
 #inText {
-	width: 80%;
-    margin-bottom: 10px;
+	width: 90%;
     min-height: 17px;
     border-bottom: 2px solid #d2d2d2;
     overflow-x: hidden;

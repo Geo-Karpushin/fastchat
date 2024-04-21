@@ -120,39 +120,39 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 		}
 		if messType==1{
 			rMess:=[]rune(string(mess))
-			code:=string(rMess[0:4])
+			code:=string(rMess[0:2])
 			ac:=strings.Split(string(mess),code)[1]
 			time:=""
-			if(code=="{~}1"){
+			if(code=="1"){
 				flag=true
 				if ac==""{
 					chatId=makeNewChat()
-					mess=[]byte("{~}1"+chatId)
+					mess=[]byte("1"+chatId)
 					flag=false
 				}else{
 					if checkChatExist(ac){
 						chatId=strings.ToUpper(ac)
 					}else{
 						chatId=makeNewChat()
-						mess=[]byte("{~}1"+chatId)
+						mess=[]byte("1"+chatId)
 						flag=false
 					}
 					messages:=checkMessages(chatId)
 					for i:=0; i<len(messages);i++{
 						err = c.WriteMessage(1, []byte(messages[i]))
 						if err != nil {
-							log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Возможная ошибка отправки сообщения после кода {~}1 в speaker():", err)
+							log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Возможная ошибка отправки сообщения после кода 1 в speaker():", err)
 							break
 						}
 					}
 					if err != nil {
-						log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Возможная ошибка отправки сообщения после кода {~}1 в speaker() 2:", err)
+						log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Возможная ошибка отправки сообщения после кода 1 в speaker() 2:", err)
 						break
 					}
 					cuser:=makeUser(c,chatId)
 					ADD(&cuser)
 				}
-			}else if(code=="{~}2"){
+			}else if(code=="2"){
 				flag=true
 				if ac!=""{
 					AFF=ac
@@ -161,10 +161,10 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 					mess=[]byte("Ошибка отправки файла, имя должно быть не пустым")
 					log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Ошибка отправки файла, имя должно быть не пустым.")
 				}
-			}else if(code=="{~}3"){
+			}else if(code=="3"){
 				flag=true
 				sendFile(getHash(ac), chatId, c)
-			}else if(code=="{~}4"){
+			}else if(code=="4"){
 				flag=true
 				sendFile(ac, chatId, c)
 			}else{
@@ -186,7 +186,7 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 				SaveFile(chatId,name,date,hex)
 				log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Файл:",name)
 				messType=1
-				mess=[]byte("{~}2"+AFF)
+				mess=[]byte("2"+AFF)
 				AFF=""
 			}else{
 				log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Пришёл файл, хотя не ожидался.")
@@ -294,10 +294,10 @@ func messageSaver(){
 						}
 					}
 				}else{
-					SaveMessage(lmess.chat,"{~}2"+lname,ldate,false)
+					SaveMessage(lmess.chat,"2"+lname,ldate,false)
 				}
 			}else{
-				SaveMessage(lmess.chat,"{~}2"+lname+"{[|4~4~4|]}"+cfe,ldate,false)
+				SaveMessage(lmess.chat,"2"+lname+""+cfe,ldate,false)
 			}
 		}else{
 			_, err := db.Exec("INSERT INTO `c"+lmess.chat+"` (`mess`, `date`) VALUES ('" + lmess.mess + "','" + lmess.date + "')")
@@ -340,7 +340,7 @@ func makeNewChat() string{
     if err != nil {
         log.Panic(err)
     }
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `c" + id + "` (mess TEXT, date DATETIME)")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `c" + id + "` (mess TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin, date DATETIME)")
     if err != nil {
         log.Panic(err)
     }
@@ -386,7 +386,7 @@ func checkMessages(lid string) ([]string){
 }
 
 func main(){
-	log.Println("v0.2.8 ---------===============--------- 09.12.2022 14:00")
+	log.Println("v0.3.0 ---------==== ПРЕРЕЛИЗ ====--------- 22.12.2022 21:22")
 	log.Println("Сервер запущен.")
 	
 	users = make(map[string][]user)
