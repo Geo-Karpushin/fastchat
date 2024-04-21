@@ -47,9 +47,14 @@ body {
 	height:20px;
 }
 
+#qr{
+	height: 100%;
+	border: 0;
+}
+
 #footer{
 	background:#606c4952;
-	height:40%;
+	height:20%;
 	font-family: 'Mulish'; 
 }
 
@@ -57,8 +62,8 @@ body {
 	height: 15%;
     display: flex;
     justify-content: space-between;
-	padding: 1%;
-	font-family: 'Mulish'; 
+	font-family: 'Mulish';
+    padding: 0% 1% 0% 1%;	
 }
 
 #name{

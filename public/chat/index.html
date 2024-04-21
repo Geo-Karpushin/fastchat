@@ -13,7 +13,7 @@
 	<body id="body">
 		<header id="header">
 			<h1 id="name">Fast Chat</h1>
-			<h1 id="id-name">Ошибка сервера (404)</h1>
+			<h1 id="id-name" onclick="console.log('hi');">Ошибка сервера (404)</h1>
 		</header>
 		<main id="main">
 			<section id="messages-content">
@@ -27,9 +27,11 @@
 				<label class="icon-button" id = "openFiles" for="inFiles"><img class="icon" src="./res/imgs/addFiles.svg"></label>
 				<input id="inFiles" type="file" multiple>
 				<div id="inText" contenteditable></div>
+				<button class="icon-button" id = "settings" onclick="settings();"><img class="icon" src="./res/imgs/settings.svg"></button>
 			</section>
 		</main>
 		<footer id="footer">
+			<img id="qr" src="http://qrcoder.ru/code/?http%3A%2F%2F185.22.233.224%3A3000&4&0" title="QR код на ваш чат">
 		</footer>
 	</body>
 </html>

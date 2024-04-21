@@ -17,6 +17,7 @@ import (
 	"time"
 	"log"
 	"fmt"
+	//"os"
 )
 
 //========================================\\
@@ -168,10 +169,8 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 				flag=true
 				sendFile(ac, chatId, c)
 			}else{
-				if ac!=""{
-					time=string(rMess[len(rMess)-14:])
-					ac=string(rMess[0:len(rMess)-14])
-				}
+				time=string(rMess[len(rMess)-14:])
+				ac=string(rMess[0:len(rMess)-14])
 				SaveMessage(chatId,ac,time,true)
 				log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Сообщение:",ac)
 				flag=true
@@ -386,12 +385,22 @@ func checkMessages(lid string) ([]string){
 }
 
 func main(){
-	log.Println("v0.3.0 ---------==== ПРЕРЕЛИЗ ====--------- 22.12.2022 21:22")
+	/*
+	f, err := os.OpenFile("testlogfile", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("Ошибка логов: %v", err)
+	}
+	defer f.Close()
+
+	log.SetOutput(f)
+	*/
+	
+	log.Println("v0.3.1 ---------==== ПРЕДЗАЩИТА ====--------- 16.01.2023 20:00")
 	log.Println("Сервер запущен.")
 	
 	users = make(map[string][]user)
 
-	db2, err := sql.Open("mysql", "root:@/fastchat?maxAllowedPacket=524288000")
+	db2, err := sql.Open("mysql", "root:@/fastchat?maxAllowedPacket=524288000")//"foo:bar@/fastchat?maxAllowedPacket=524288000")
     db = db2
 	
 	log.Println("Подключение к MySQL...")

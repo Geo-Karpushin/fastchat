@@ -10,11 +10,15 @@ reader.addEventListener('load', readFile);
 
 
 let id=(document.location+"").split('?')[1];
+if (id==undefined){
+	let id=(document.location+"").split('%3F')[1];
+}
 
 socket.onopen = () => {
 	console.log("Подключение успешно");
 	if(id!=undefined){
 		idName.innerText = "ID: "+id;
+		document.getElementById("qr").src="http://qrcoder.ru/code/?"+document.location.href+"&4&0";//"http://qrcoder.ru/code/?http%3A%2F%2F185.22.233.224%3A3000%2Fchat%2F%3F"+id+"&4&0";
 		socket.send("1"+id);
 	}else{
 		document.getElementById("body").style.display="none";
@@ -88,7 +92,7 @@ function addMessage(type, text, time, needToSave)
 		const curDate = new Date();
 		time = curDate.toLocaleString();
 	}else{
-		time=time.substring(0,4)+'-'+time.substring(4,6)+'-'+time.substring(6,8)+'T'+time.substring(8,10)+':'+time.substring(10,12)+':'+time.substring(12,14)
+		time=time.substring(0,4)+'-'+time.substring(4,6)+'-'+time.substring(6,8)+' '+time.substring(8,10)+':'+time.substring(10,12)+':'+time.substring(12,14)+' UTC';
 		const curDate = new Date(time);
 		time = curDate.toLocaleString();
 	}
@@ -121,7 +125,7 @@ function addMessage(type, text, time, needToSave)
 }
 
 function goodDate(date){
-	return date.getFullYear()+("0" + (date.getMonth() + 1)).slice(-2)+String(date.getDate()).padStart(2, '0')+("0" + (date.getHours())).slice(-2)+("0" + (date.getMinutes())).slice(-2)+("0" + (date.getSeconds())).slice(-2);
+	return date.getUTCFullYear()+("0" + (date.getUTCMonth() + 1)).slice(-2)+String(date.getUTCDate()).padStart(2, '0')+("0" + (date.getUTCHours())).slice(-2)+("0" + (date.getUTCMinutes())).slice(-2)+("0" + (date.getUTCSeconds())).slice(-2);
 }
 
 function getFile(event){
@@ -209,6 +213,7 @@ function send(){
 		}else{
 			const curDate = new Date();
 			let gd=goodDate(curDate);
+			console.log(inText.innerText+gd);
 			socket.send(inText.innerText+gd);
 		}
 		inText.innerText="";
