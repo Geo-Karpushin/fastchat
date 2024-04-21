@@ -255,7 +255,7 @@ func messageSaver(){
 				log.Println(err)
 				name:=qm.pop()
 				for i := 0; i<len(users[lmess.chat]);i++{
-					err = users[lmess.chat][i].c.WriteMessage(1, []byte("Ошибка отправки файла "+ name.mess[4:]+name.date))
+					err = users[lmess.chat][i].c.WriteMessage(1, []byte("Ошибка отправки файла: "+ name.mess[4:]+name.date))
 					if err != nil {
 						log.Println("Клиент:",users[lmess.chat][i].c.RemoteAddr().String()+". Возможная ошибка отправки файла в messageSaver():", err)
 					}
@@ -329,7 +329,7 @@ func checkMessages(lid string) ([]string){
 	res, err := db.Query("SELECT * FROM `c"+lid+"` LIMIT 50")
     if err != nil {
         log.Panic(err)
-		return []string{"Ошибка загрузки данных, повторите попытку позже. Если ошибка сохраниться - обратитесь в техническую поддержку."}//,[][]byte{}
+		return []string{"Ошибка загрузки данных чата, повторите попытку позже. Если ошибка сохраниться - обратитесь в техническую поддержку."}//,[][]byte{}
     }
 	masmess:=[]string{}
 	for res.Next(){
@@ -346,12 +346,12 @@ func checkMessages(lid string) ([]string){
 }
 
 func main(){
-	log.Println("v0.2.6.0.5 ---------===============--------- 06.12.2022 23:00")
+	log.Println("v0.2.7 ---------===============--------- 08.12.2022 22:00")
 	log.Println("Сервер запущен.")
 	
 	users = make(map[string][]user)
 
-	db2, err := sql.Open("mysql", "root:@/fastchat")
+	db2, err := sql.Open("mysql", "root:@/fastchat?maxAllowedPacket=524288000")
     db = db2
 	
 	log.Println("Подключение к MySQL...")

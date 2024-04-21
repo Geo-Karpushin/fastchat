@@ -173,7 +173,11 @@ document.addEventListener('keydown', function(e) {
 
 function sendFiles(){
 	for(let i=0; i<inFiles.files.length; i++){
-		thisFiles.push(inFiles.files[i]);
+		if(inFiles.files[i].size<524287000){
+			thisFiles.push(inFiles.files[i]);
+		}else{
+			addMessage(1, "Ошибка отправки файла, превышен максимальный размер в 499 МБайт", "00:00", false);
+		}
 	}
 	helpRead();
 	inFiles.value=""
