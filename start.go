@@ -13,11 +13,12 @@ import (
 	"math/rand"
 	"net/http"
 	"strings"
+	"regexp"
 	"io/fs"
 	"time"
 	"log"
 	"fmt"
-	//"os"
+	"os"
 )
 
 //========================================\\
@@ -50,6 +51,7 @@ var msAct bool
 var temp []byte
 var qm mqueue
 var users map[string][]user
+var IsLetter = regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString
 
 //========================================\\
 
@@ -126,32 +128,37 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 			time:=""
 			if(code=="1"){
 				flag=true
-				if ac==""{
-					chatId=makeNewChat()
-					mess=[]byte("1"+chatId)
-					flag=false
-				}else{
-					if checkChatExist(ac){
-						chatId=strings.ToUpper(ac)
+				if ac!=""{
+					if IsLetter(ac){
+						if len(ac)>=5 && len(ac)<=10{
+							ac=strings.ToUpper(ac)
+							chatId=ac
+							if checkChatExist(ac){
+								messages:=checkMessages(chatId)
+								for i:=0; i<len(messages);i++{
+									err = c.WriteMessage(1, []byte(messages[i]))
+									if err != nil {
+										log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Возможная ошибка отправки сообщения после кода 1 в speaker():", err)
+										break
+									}
+								}
+							}else{
+								makeNewChat(ac)
+							}
+							cuser:=makeUser(c,chatId)
+							ADD(&cuser)
+						}else{
+							mess=[]byte("1EOF")
+							flag=false
+						}
 					}else{
-						chatId=makeNewChat()
-						mess=[]byte("1"+chatId)
+						mess=[]byte("1EOF")
 						flag=false
 					}
-					messages:=checkMessages(chatId)
-					for i:=0; i<len(messages);i++{
-						err = c.WriteMessage(1, []byte(messages[i]))
-						if err != nil {
-							log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Возможная ошибка отправки сообщения после кода 1 в speaker():", err)
-							break
-						}
-					}
-					if err != nil {
-						log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Возможная ошибка отправки сообщения после кода 1 в speaker() 2:", err)
-						break
-					}
-					cuser:=makeUser(c,chatId)
-					ADD(&cuser)
+				}else{
+					chatId=makeNewChat("")
+					mess=[]byte("1"+chatId)
+					flag=false
 				}
 			}else if(code=="2"){
 				flag=true
@@ -164,6 +171,7 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 				}
 			}else if(code=="3"){
 				flag=true
+				log.Println(getHash(ac), ac)
 				sendFile(getHash(ac), chatId, c)
 			}else if(code=="4"){
 				flag=true
@@ -281,6 +289,7 @@ func messageSaver(){
 			cfe:=checkFileCollision(lmess.chat, lmess.date)
 			log.Println(cfe)
 			if(cfe=="NOVALUE-NOCOLLISION"){
+				log.Println(lmess.mess,getHash(lmess.mess))
 				req:="INSERT INTO `f"+lmess.chat+"` (`name`, `data`, `hash`) VALUES ('" + getHash(lmess.mess) + "','" + lmess.date + "','"+ getHash(lmess.date) +"')"
 				_, err := db.Exec(req)
 				if err != nil {
@@ -333,8 +342,10 @@ func makeID() string {
 	return strings.Join(ans, "")
 }
 
-func makeNewChat() string{
-	id:=makeID()
+func makeNewChat(id string) string{
+	if id==""{
+		id=makeID()
+	}
 	_, err := db.Exec("INSERT INTO `chats` (`id`) VALUES ('" + id + "')")
     if err != nil {
         log.Panic(err)
@@ -385,22 +396,20 @@ func checkMessages(lid string) ([]string){
 }
 
 func main(){
-	/*
-	f, err := os.OpenFile("testlogfile", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	f, err := os.OpenFile("logs", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("Ошибка логов: %v", err)
 	}
 	defer f.Close()
 
 	log.SetOutput(f)
-	*/
 	
-	log.Println("v0.3.1 ---------==== ПРЕДЗАЩИТА ====--------- 16.01.2023 20:00")
+	log.Println("v0.3.2 ---------==== ПРЕДЗАЩИТА ====--------- 26.01.2023 17:30")
 	log.Println("Сервер запущен.")
 	
 	users = make(map[string][]user)
 
-	db2, err := sql.Open("mysql", "root:@/fastchat?maxAllowedPacket=524288000")//"foo:bar@/fastchat?maxAllowedPacket=524288000")
+	db2, err := sql.Open("mysql", "foo:bar@/fastchat?maxAllowedPacket=524288000")//"root:@/fastchat?maxAllowedPacket=524288000")
     db = db2
 	
 	log.Println("Подключение к MySQL...")

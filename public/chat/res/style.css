@@ -76,6 +76,36 @@ body {
 	margin:0;
 }
 
+#mainpage{
+	height:100%;
+	width:100%;
+}
+
+#errorpage{
+	margin-left: auto;
+    margin-right: auto;
+    display: none;
+    justify-content: center;
+    align-items: center;
+	position:absolute;
+	height:100%;
+	width:100%;
+	top:0;
+	left:0;
+	background:rgba(55,55,55,0.3);
+}
+
+#menu{
+	height: 250px;
+    width: 200px;
+    background: #333e0b;
+    position: absolute;
+    display: none;
+    margin-top: -255px;
+    border: #fff solid 2px;
+    border-radius: 5px;
+}
+
 #id-name{
 	font-family: 'NightmareMaker'; 
 	-webkit-background-clip: text;
@@ -231,6 +261,14 @@ body {
 	width:100%;
 	text-align:right;
 	font-family: 'Mulish';
+}
+
+#theerror{
+	background: #b1c755;
+    width: 70%;
+    color: #121212;
+    text-align: center;
+	border-radius: 10px;
 }
 
 @keyframes blink {

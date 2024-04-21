@@ -17,11 +17,17 @@ if (id==undefined){
 socket.onopen = () => {
 	console.log("Подключение успешно");
 	if(id!=undefined){
-		idName.innerText = "ID: "+id;
-		document.getElementById("qr").src="http://qrcoder.ru/code/?"+document.location.href+"&4&0";//"http://qrcoder.ru/code/?http%3A%2F%2F185.22.233.224%3A3000%2Fchat%2F%3F"+id+"&4&0";
-		socket.send("1"+id);
+		if(id=="EOF"){
+			document.getElementById("mainpage").style.display="none"; 
+			document.getElementById("errorpage").style.display="flex"; 
+			idName.innerText = "400";
+		}else{
+			idName.innerText = "ID: "+id;
+			document.getElementById("qr").src="http://qrcoder.ru/code/?"+document.location.href+"&4&0";//"http://qrcoder.ru/code/?http%3A%2F%2F185.22.233.224%3A3000%2Fchat%2F%3F"+id+"&4&0";
+			socket.send("1"+id);
+		}
 	}else{
-		document.getElementById("body").style.display="none";
+		document.getElementById("mainpage").style.display="none";
 		socket.send("1");
 	}
 }
@@ -130,7 +136,8 @@ function goodDate(date){
 
 function getFile(event){
 	let ctime = event.target.parentNode.parentNode.getElementsByClassName("message-time")[0].innerText
-	socket.send("3"+event.target.innerText+ctime.substring(6,10)+ctime.substring(3,5)+ctime.substring(0,2)+ctime.substring(12).replaceAll(":",""));
+	let cDate = new Date(ctime.substring(6,10)+"-"+ctime.substring(3,5)+"-"+ctime.substring(0,2)+"T"+ctime.substring(12))
+	socket.send("3"+event.target.innerText+goodDate(cDate));
 	awaitingFileName=event.target.innerText
 }
 

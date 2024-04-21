@@ -47,3 +47,13 @@ window.onload = function(){
 		}
 	});
 };
+
+document.addEventListener("click", function(e) {
+	let m = document.getElementById('menu');
+	if (e.target.id != 'settings-container' && e.target.id != 'settings' && e.target.id != 'menu') {
+		m.style.display = 'none';
+	} else if (e.target.id == 'settings' || e.target.id=='settings-container') {
+		m.style.display = (m.style.display != 'block') ? 'block' : 'none';
+	}
+	console.log(e.target.id);
+});
