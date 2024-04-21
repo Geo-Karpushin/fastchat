@@ -4,7 +4,7 @@ let messages = document.getElementById("messages-container");
 let inText = document.getElementById("inText");
 let inFiles = document.getElementById("inFiles");
 let thisFiles = [];
-//let awaitingFileName="";
+let awaitingFileName="";
 let idName = document.getElementById("id-name");
 reader.addEventListener('load', readFile);
 
@@ -42,12 +42,6 @@ socket.onerror = (error) => {
 
 socket.onmessage = (msg) => {
 	console.log(msg.data);
-	/*
-	if(typeof(msg.data)=='object'){
-		if(awaitingFileName!="")
-			addMessage(2, msg.data, "00:00", false);
-	}else{
-	*/
 	if(typeof(msg.data)=='string'){
 		let code=msg.data.substring(0,4);
 		if (code=="{~}1" && msg.data!="{~}1"){
@@ -62,7 +56,22 @@ socket.onmessage = (msg) => {
 			let time=msg.data.substring(msg.data.length-14,msg.data.length);
 			addMessage(1, mess, time, false);
 		}
+	}else{
+		file=new File([msg.data], awaitingFileName);
+		let url = URL.createObjectURL(file);
+		download(url);
 	}
+}
+
+function download(url) {
+	const aTag = document.createElement("a");
+	aTag.href = url;
+	aTag.download = awaitingFileName;
+	document.body.appendChild(aTag);
+	aTag.click();
+	URL.revokeObjectURL(url);
+	aTag.remove();
+	awaitingFileName='';
 }
 
 function convertTZ(date, tzString) {
@@ -107,9 +116,60 @@ function goodDate(date){
 function getFile(event){
 	socket.send("{~}3"+event.target.innerText);
 	console.log("{~}3"+event.target.innerText);
-	//file=new File([text], awaitingFileName);
-	//let url = URL.createObjectURL(file);
+	awaitingFileName=event.target.innerText
 }
+
+function sendFiles(){
+	for(let i=0; i<inFiles.files.length; i++){
+		thisFiles.push(inFiles.files[i]);
+	}
+	helpRead();
+	inFiles.value=""
+}
+
+function helpRead() {
+	if(reader.readyState!=1 && thisFiles.length!=0)
+	{
+		const curDate = new Date();
+		let gd=goodDate(curDate)
+		console.log("File: ");
+		console.log(thisFiles[thisFiles.length-1]);
+		socket.send("{~}2"+thisFiles[thisFiles.length-1].name+gd);
+		reader.readAsArrayBuffer(thisFiles[thisFiles.length-1]);
+		thisFiles.pop();
+	}else if(reader.readyState==1){
+		helpRead();
+	}
+}
+
+function readFile(event) {
+	console.log(event);
+	socket.send(event.target.result);
+	helpRead();
+}
+
+document.addEventListener('keydown', function(e) {
+	if(e.keyCode==13){
+		if(inText.innerText=="" || inText.innerText=="\n\n\n"){
+			inText.innerText="";
+		}else{
+			if(inText.innerText.substring(0,3)=="{~}"){
+				addMessage(1, "Сообщение не может содержать {~}", "00:00", false)
+			}else{
+				const curDate = new Date();
+				let gd=goodDate(curDate);
+				socket.send(inText.innerText+gd);
+			}
+			inText.innerText="";
+		}
+		setTimeout(() => {  inText.innerText=""; }, 50);
+		
+		if(inFiles.files.length!=0){
+			sendFiles();
+		}
+	}
+	//console.log(e.keyCode);
+});
 
 function sendFiles(){
 	for(let i=0; i<inFiles.files.length; i++){
