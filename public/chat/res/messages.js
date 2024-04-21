@@ -75,7 +75,7 @@ socket.onmessage = (msg) => {
 		}else if (code=="3"){
 			document.getElementById("mainpage").style.display="block"; 
 			document.getElementById("errorpage").style.display="none";
-			idName.innerText = id;
+			idName.innerText = "ID: "+id;
 		}else if (code=="4"){
 			id = msg.data.split("4")[1];
 			history.pushState("", "Fast Chat", "./?"+id);
@@ -172,6 +172,7 @@ function addMessageToUp(msg) {
 		for(let i=0; i<temp.length; i++){
 			text+="<p>"+temp[i]+"</p>"
 		}
+		
 		messages.insertAdjacentHTML("afterbegin", '<div class = "message"><div class="message-text">'+text+'</div><div class="message-time">'+time+'</div></div>');
 	}else if (type==2){
 		messages.insertAdjacentHTML("afterbegin", '<div class = "message"><div class="message-text"><a id="file-url" onclick="getFile(event); return false;" download="'+text+'">'+text+'</a></div><div class="message-time">'+time+'</div></div>');
@@ -193,17 +194,42 @@ function addMessage(type, text, time) {
 	}
 	if (type==1){
 		temp = text.split("\n");
-		text = ""
+		text = document.createElement("div");
 		for(let i=0; i<temp.length; i++){
-			text+="<p>"+temp[i]+"</p>"
+			let cp = document.createElement("p");
+			cp.innerText = temp[i];
+			text.appendChild(cp);
 		}
-		messages.innerHTML += '<div class = "message"><div class="message-text">'+text+'</div><div class="message-time">'+time+'</div></div>';
+		/*
+		let div = document.createElement("div");
+		div.className = "message";
+		let mte = document.createElement("div");
+		mte.className = "message-text";
+		mte.innerText = text;
+		let mti = document.createElement("div");
+		mti.className = "message-time";
+		mti.innerText = time;
+		div.appendChild(mte);
+		div.appendChild(mti);
+		messages.appendChild(div);
+		*/
+		messages.innerHTML += '<div class = "message"><div class="message-text">'+text.innerHTML+'</div><div class="message-time">'+time+'</div></div>';
 	}else if (type==2){
-		messages.innerHTML += '<div class = "message"><div class="message-text"><a id="file-url" onclick="getFile(event); return false;" download="'+text+'">'+text+'</a></div><div class="message-time">'+time+'</div></div>';
+		a = document.createElement("a");
+		a.setAttribute("id", "file-url");
+		a.setAttribute("onclick", "getFile(event); return false;");
+		a.setAttribute("download", text);
+		a.innerText = text;
+		messages.innerHTML += '<div class = "message"><div class="message-text">'+a.outerHTML+'</div><div class="message-time">'+time+'</div></div>';
 		awaitingFileName="";
 	}else if (type==3){
-		let innerTXT=text.split("")
-		messages.innerHTML += '<div class = "message"><div class="message-text"><a id="file-url" onclick="getCurFile(`'+innerTXT[0]+'`,`'+innerTXT[1]+'`);" download="'+innerTXT[0]+'">'+innerTXT[0]+'</a></div><div class="message-time">'+time+'</div></div>';
+		let innerTXT=text.split("");
+		a = document.createElement("a");
+		a.setAttribute("id", "file-url");
+		a.setAttribute("onclick", "getCurFile('"+innerTXT[0]+"','"+innerTXT[1]+"');");
+		a.setAttribute("download", innerTXT[0]);
+		a.innerText = innerTXT[0];
+		messages.innerHTML += '<div class = "message"><div class="message-text">'+a.outerHTML+'</div><div class="message-time">'+time+'</div></div>';
 		awaitingFileName="";
 	}
 	setTimeout(() => {

@@ -74,6 +74,9 @@ func DEL(id string, ip string) {
 			users[id] = append(users[id][:i], users[id][i+1:]...)
 		}
 	}
+	if len(users[id])==0{
+		delete(users, id)
+	}
 }
 
 func speaker(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +126,7 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 									}
 								}
 								
-								cuser := makeUser(c, chatID)
+								cuser = makeUser(c, chatID)
 								ADD(&cuser)
 								
 								mess=[]byte("3")
@@ -133,10 +136,10 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 							}
 						} else if IsLetter(id) && len(id) >= 5 && len(id) <= 10 && id!="undefined" && id!="chats"{
 							chatID = id
-							cuser := makeUser(c, chatID)
+							cuser = makeUser(c, chatID)
 							ADD(&cuser)
-							log.Println("Клиент:", r.RemoteAddr+", создал чат к чат", chatID)
-							makeNewChat(id)
+							log.Println("Клиент:", r.RemoteAddr+", создал чат", chatID)
+							makeNewChat(chatID)
 							continue
 						} else {
 							mess = []byte("4EOF")
@@ -144,6 +147,9 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 					} else {
 						chatID = makeNewChat("")
 						mess = []byte("4" + chatID)
+						cuser = makeUser(c, chatID)
+						ADD(&cuser)
+						log.Println("Клиент:", r.RemoteAddr+", создал чат", chatID)
 					}
 				} else if chatID != "None"{
 					if code == "2" {                                                                                   //Сообщение о скорой отправке файла с AFN (имя + время)
@@ -226,7 +232,6 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 					log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Файл:", AFN)
 					AFN = ""
 					AFT = ""
-					mess = []byte{}
 					continue
 				} else {
 					messType = 1
@@ -297,7 +302,7 @@ func save(chatID string, mtype bool, mess string, date time.Time, seconddata []b
 		for i := 0; i < len(users[chatID]); i++ {
 			err = users[chatID][i].c.WriteMessage(1, []byte("Ошибка сохранения сообщения"+mess+date.Format(timeLayout)))
 			if err != nil {
-				log.Println("Клиент:", users[chatID][i].c.RemoteAddr().String()+", чат:", chatID+". Возможная ошибка отправки сообщения в messageSaver():", err)
+				log.Println("Клиент:", users[chatID][i].c.RemoteAddr().String()+", чат:", chatID+". Возможная ошибка отправки сообщения об ошибке в messageSaver():", err)
 			}
 		}
 		log.Panic(err)
@@ -306,7 +311,7 @@ func save(chatID string, mtype bool, mess string, date time.Time, seconddata []b
 			save(chatID, false, "2"+string([]byte(mess)[:len([]byte(mess))-33])+""+hMess, date, []byte{})
 		} else {
 			for i := 0; i < len(users[chatID]); i++ {
-				err = users[chatID][i].c.WriteMessage(1, []byte(mess+date.Format(timeLayout)))
+				err = users[chatID][i].c.WriteMessage(1, []byte(hMess+date.Format(timeLayout)))
 				if err != nil {
 					log.Println("Клиент:", users[chatID][i].c.RemoteAddr().String()+", чат:", chatID+". Возможная ошибка отправки сообщения в messageSaver():", err)
 				}
@@ -335,7 +340,7 @@ func makeNewChat(id string) string {
 	}
 	err = ExecuteQuery("CREATE TABLE IF NOT EXISTS \"" + id + "\" (type BOOLEAN, mess VARCHAR, date TIMESTAMP, seconddata BLOB, PRIMARY KEY ((type),date)) WITH CLUSTERING ORDER BY(date DESC)")
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
 	}
 	return id
 }
@@ -398,11 +403,7 @@ func setDBconnection(){
 	db.cluster.Consistency = gocql.Quorum
 	db.session, err = db.cluster.CreateSession()
 	if err != nil {
-		if err == gocql.ErrNoConnectionsStarted{
-			defer setDBconnection()
-			return
-		}
-        log.Fatal(err)
+		setDBconnection()
     }
 }
 
@@ -420,7 +421,7 @@ func main() {
 
 	log.SetOutput(f)
 
-	log.Println("v0.3.7 ---------==== FASTCHAT ====--------- 07.03.2023 20:00")
+	log.Println("v0.3.8 ---------==== FASTCHAT ====--------- 12.03.2023 15:10")
 	log.Println("Сервер запущен.")
 	defer log.Println("Завершение работы...")
 
