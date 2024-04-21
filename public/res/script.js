@@ -9,8 +9,6 @@ function startChat(event){
 	}
 }
 
-
-
 function updateBTN(event){
 	linp=event.target;
 	inp=linp.value
