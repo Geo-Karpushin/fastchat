@@ -6,9 +6,11 @@
 		<meta charset="utf-8"/>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<script src="res/anime.min.js"></script>
-		<script src="res/onLoad.js" defer></script>
-		<script src="res/messages.js" defer></script>
+		<link rel="icon" href="../res/favicon.png" type="image/png">
+		<script src="../res/anime.min.js"></script>
+		<script src="./res/onLoad.js" defer></script>
+		<script src="./res/messages.js" defer></script>
+		<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
 	</head>
 	<body id="body">
 		<header id="header">
@@ -34,13 +36,17 @@
 					<div id="inText" contenteditable></div>
 					<div id="settings-container">
 						<div id="menu">
+							<div id="set-password" contenteditable></div>
+							<button id="apply-settings" onclick="applySettings();">
+								Применить
+							</button>
 						</div>
 						<button class="icon-button" id = "settings"><img class="icon" src="./res/imgs/settings.svg" style="pointer-events: none;"></button>
 					</div>
 				</section>
 			</main>
 			<footer id="footer">
-				<img id="qr" src="http://qrcoder.ru/code/?http%3A%2F%2F185.22.233.224%3A3000&4&0" title="QR код на ваш чат (Если его нет - название чата некорректно, создайте другой чат)">
+				<div id="qr">
 			</footer>
 		</section>
 		<section id="errorpage">

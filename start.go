@@ -40,7 +40,9 @@ type DBConnection struct {
 //=================CONFIG=================\\
 
 const maxIDlen int = 5
-const port string = "3000"
+const HTTPSport string = "443"
+const HTTPport string = "80"
+const SELFNAME = "fastchat.space"
 const maxSizeInBytes = 10485760
 const timeLayout = "2006-01-02 15:04:05.000 +0000 UTC"
 
@@ -88,84 +90,112 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 	var cuser user
 	_ = cuser
 	for {
-		flag := false
 		messType, mess, err := c.ReadMessage()
 		if err != nil {
 			log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Возможная ошибка (норма: 1000, 1001, 1005, 1006):", err)
-			err = c.WriteMessage(messType, mess)
-			if err != nil {
-				log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Возможная ошибка отправки сообщения в повторителе speaker():", err)
-				break
-			}
 			break
 		} else {
 			if messType == 1 {
-				flag = true
 				rMess := []rune(string(mess))
 				code := string(rMess[0:2])
 				ac := strings.Split(string(mess), code)[1]
 				if code == "1" {
 					if ac != "" {
-						if IsLetter(ac) {
-							if len(ac) >= 5 && len(ac) <= 10 {
-								ac = strings.ToUpper(ac)
-								chatID = ac
-								if checkChatExist(ac) {
-									messages := checkMessages(chatID)
-									for i := 0; i < len(messages); i++ {
-										err = c.WriteMessage(1, []byte(messages[i]))
-										if err != nil {
-											log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Возможная ошибка отправки сообщения после кода 1 в speaker():", err)
-											break
-										}
+						temp := strings.Split(ac, "")
+						var id, pass string = strings.ToLower(temp[0]), ""
+						if checkChatExist(id) {
+							rpass := checkChatPass(id)
+							log.Println("Клиент:", r.RemoteAddr+", подключается к чату", id)
+							if len(temp) == 2 {
+								pass = temp[1]
+							}
+							if rpass == pass{
+								chatID = id
+								log.Println("Клиент:", r.RemoteAddr+", подключен к чату", chatID)
+								
+								messages := checkMessages(chatID)
+								
+								for i := 0; i < len(messages); i++ {
+									err = c.WriteMessage(1, []byte(messages[i]))
+									if err != nil {
+										log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Возможная ошибка отправки сообщений после кода 1 в speaker():", err)
+										break
 									}
-								} else {
-									makeNewChat(ac)
 								}
+								
 								cuser := makeUser(c, chatID)
 								ADD(&cuser)
-							} else {
-								mess = []byte("1EOF")
-								flag = false
+								
+								mess=[]byte("3")
+							}else{
+								log.Println("Клиент:", r.RemoteAddr,"ввёл неверный пароль от чата", id)
+								mess=[]byte("5")
 							}
+						} else if len(temp) == 1 && IsLetter(ac) && len(ac) >= 5 && len(ac) <= 10 && ac!="undefined" && ac!="chats"{
+							chatID = ac
+							cuser := makeUser(c, chatID)
+							ADD(&cuser)
+							log.Println("Клиент:", r.RemoteAddr+", создал чат к чат", chatID)
+							makeNewChat(ac)
+							continue
 						} else {
 							mess = []byte("1EOF")
-							flag = false
 						}
 					} else {
 						chatID = makeNewChat("")
 						mess = []byte("1" + chatID)
-						flag = false
 					}
-				} else if code == "2" {
-					if ac != "" {
-						rac := []rune(ac)
-						AFN = ac
-						AFT = string(rac[len(rac)-33:])
+				} else if chatID != "None"{
+					if code == "2" {
+						if ac != "" {
+							log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Запрошен файл с AFN =", ac)
+							rac := []rune(ac)
+							AFN = ac
+							AFT = string(rac[len(rac)-33:])
+							if err != nil {
+								log.Panic(err)
+								AFN = ""
+							}
+							continue
+						} else {
+							mess = []byte("Ошибка отправки файла, имя должно быть не пустым")
+							log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Ошибка отправки файла, имя должно быть не пустым.")
+						}
+					} else if code == "4" {
+						log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Запрошен файл", ac)
+						sendFile(ac, chatID, c)
+						continue
+					} else if code == "5" {
+						err := ExecuteQuery("INSERT INTO chats (id, password) VALUES (?, ?)", chatID, ac)
 						if err != nil {
 							log.Panic(err)
-							AFN = ""
+							mess = []byte("Ошибка. Пароль не установлен.")
+							log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Ошибка смены пароля:", err)
+						}else{
+							log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Установлен новый пароль -", ac)
+							for i := 0; i < len(users[chatID]); i++ {
+								err = users[chatID][i].c.WriteMessage(1, []byte("1" + chatID))
+								if err != nil {
+									log.Println("Клиент:", users[chatID][i].c.RemoteAddr().String()+", чат:", chatID+". При смене пароля произошла ошибка:", err)
+								}
+							}
+							continue
 						}
 					} else {
-						flag = false
-						mess = []byte("Ошибка отправки файла, имя должно быть не пустым")
-						log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Ошибка отправки файла, имя должно быть не пустым.")
+						ac = string(rMess[0 : len(rMess)-33])
+						date, err := time.Parse(timeLayout, string(rMess[len(rMess)-33:]))
+						if err != nil {
+							log.Panic(err)
+						}
+						save(chatID, false, ac, date, nil)
+						log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Сообщение:", ac)
+						continue
 					}
-				} else if code == "3" {
-					sendFile(getHash([]byte(ac)), chatID, c)
-				} else if code == "4" {
-					sendFile(ac, chatID, c)
-				} else {
-					ac = string(rMess[0 : len(rMess)-33])
-					date, err := time.Parse(timeLayout, string(rMess[len(rMess)-33:]))
-					if err != nil {
-						log.Panic(err)
-					}
-					save(chatID, false, ac, date, nil)
-					log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Сообщение:", ac)
+				}else{
+					log.Println("Клиент:", r.RemoteAddr, "был подключен без чата.")
+					break
 				}
-			} else if messType == 2 {
-				flag = true
+			} else if chatID != "None" && messType == 2 {
 				if len(mess)>maxSizeInBytes{
 					log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Файл "+string([]byte(AFN)[:len([]byte(AFN))-33])+" превышает допустимый размер")
 					AFN=""
@@ -179,25 +209,27 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 					}
 					save(chatID, true, AFN, ctime, mess)
 					log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Файл:", AFN)
-					messType = 1
-					mess = []byte("2" + AFN)
 					AFN = ""
 					AFT = ""
+					mess = []byte{}
+					continue
 				} else {
+					messType = 1
+					mess = []byte("Пришёл файл без имени, повторите отправку.")
 					log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Пришёл файл, хотя не ожидался.")
 				}
-				mess = []byte{}
+			} else {
+				log.Println("Клиент:", r.RemoteAddr, "попытался отправить байты без чата.")
+				break
 			}
-			if !flag {
-				err = c.WriteMessage(messType, mess)
-				if err != nil {
-					log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Возможная ошибка отправки сообщения в повторителе speaker():", err)
-					break
-				}
+			err = c.WriteMessage(messType, mess)
+			if err != nil {
+				log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Возможная ошибка отправки сообщения в повторителе speaker():", err)
+				break
 			}
 		}
 	}
-	log.Println("Клиент:", r.RemoteAddr+". Отключен.")
+	log.Println("Клиент:", r.RemoteAddr, "отключен.")
 	DEL(chatID, r.RemoteAddr)
 	return
 }
@@ -211,7 +243,7 @@ func getHash(in []byte) string {
 
 func sendFile(name string, id string, c *websocket.Conn) {
 	var file []byte
-	err := db.session.Query("SELECT seconddata FROM "+id+" WHERE type = true AND mess=? LIMIT 1 ALLOW FILTERING", name).Scan(&file)
+	err := db.session.Query("SELECT seconddata FROM \""+id+"\" WHERE type = true AND mess=? LIMIT 1 ALLOW FILTERING", name).Scan(&file)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -224,7 +256,7 @@ func sendFile(name string, id string, c *websocket.Conn) {
 }
 
 func checkFileCollision(id string, file []byte) string {
-	res := db.session.Query("SELECT mess FROM "+id+" WHERE seconddata=? LIMIT 1 ALLOW FILTERING", file).WithContext(ctx).Iter().Scanner()
+	res := db.session.Query("SELECT mess FROM \""+id+"\" WHERE seconddata=? LIMIT 1 ALLOW FILTERING", file).WithContext(ctx).Iter().Scanner()
 	if res.Next() {
 		var n string
 		err := res.Scan(&n)
@@ -245,7 +277,7 @@ func save(chatID string, mtype bool, mess string, date time.Time, seconddata []b
 			return
 		}
 	}
-	err := ExecuteQuery("INSERT INTO "+chatID+" (type, mess, date, seconddata) VALUES (?,?,?,?)", mtype, hMess, date, seconddata)
+	err := ExecuteQuery("INSERT INTO \""+chatID+"\" (type, mess, date, seconddata) VALUES (?,?,?,?)", mtype, hMess, date, seconddata)
 	if err != nil {
 		for i := 0; i < len(users[chatID]); i++ {
 			err = users[chatID][i].c.WriteMessage(1, []byte("Ошибка сохранения сообщения"+mess+date.String()))
@@ -271,7 +303,7 @@ func save(chatID string, mtype bool, mess string, date time.Time, seconddata []b
 func makeID() string {
 	rand.Seed(time.Now().UnixNano())
 	var ans []string
-	IDalphabet := [...]string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "I", "G", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
+	IDalphabet := [...]string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "g", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
 	for i := 0; i < maxIDlen; i++ {
 		ans = append(ans, IDalphabet[rand.Intn(len(IDalphabet))])
 	}
@@ -286,7 +318,7 @@ func makeNewChat(id string) string {
 	if err != nil {
 		log.Panic(err)
 	}
-	err = ExecuteQuery("CREATE TABLE IF NOT EXISTS " + id + " (type BOOLEAN, mess VARCHAR, date TIMESTAMP, seconddata BLOB, PRIMARY KEY ((type),date)) WITH CLUSTERING ORDER BY(date DESC)")
+	err = ExecuteQuery("CREATE TABLE IF NOT EXISTS \"" + id + "\" (type BOOLEAN, mess VARCHAR, date TIMESTAMP, seconddata BLOB, PRIMARY KEY ((type),date)) WITH CLUSTERING ORDER BY(date DESC)")
 	if err != nil {
 		log.Panic(err)
 	}
@@ -298,8 +330,16 @@ func checkChatExist(lid string) bool {
 	return res.Next()
 }
 
+func checkChatPass(lid string) (pass string) {
+	err := db.session.Query("SELECT password FROM chats WHERE id=?", lid).WithContext(ctx).Consistency(gocql.One).Scan(&pass)
+	if err != nil{
+		log.Panic(err)
+	}
+	return
+}
+
 func checkMessages(lid string) []string {
-	res := db.session.Query("SELECT mess, date FROM " + lid + " WHERE type = false LIMIT 50").WithContext(ctx).Iter().Scanner()
+	res := db.session.Query("SELECT mess, date FROM \"" + lid + "\" WHERE type = false LIMIT 50").WithContext(ctx).Iter().Scanner()
 	masmess := []string{}
 	for res.Next() {
 		mess := ""
@@ -321,6 +361,26 @@ func ExecuteQuery(query string, values ...interface{}) error {
 	return err
 }
 
+func setDBconnection(){
+	var err error
+	db.cluster = gocql.NewCluster("localhost")
+	db.cluster.Keyspace = "fastchat"
+	db.cluster.Consistency = gocql.Quorum
+	db.session, err = db.cluster.CreateSession()
+	if err != nil {
+		if err == gocql.ErrNoConnectionsStarted{
+			defer setDBconnection()
+			return
+		}
+        log.Fatal(err)
+    }
+}
+
+func redirectToHTTPS(w http.ResponseWriter, r *http.Request) {
+	log.Println("Redirecting",r.RemoteAddr,"to","https://"+r.Host+":"+HTTPSport+r.RequestURI)
+    http.Redirect(w, r, "https://"+r.Host+":"+HTTPSport+r.RequestURI, http.StatusMovedPermanently)
+}
+
 func main() {
 	f, err := os.OpenFile("logs", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -330,7 +390,7 @@ func main() {
 
 	log.SetOutput(f)
 
-	log.Println("v0.3.4 ---------==== FASTCHAT ====--------- 08.02.2023 00:00")
+	log.Println("v0.3.6 ---------==== FASTCHAT ====--------- 24.02.2023 17:00")
 	log.Println("Сервер запущен.")
 	defer log.Println("Завершение работы...")
 
@@ -339,16 +399,9 @@ func main() {
 
 	log.Println("Подключение к БД...")
 
-	db.cluster = gocql.NewCluster("localhost")
-	db.cluster.Keyspace = "fastchat"
-	db.cluster.Consistency = gocql.Quorum
-	db.session, err = db.cluster.CreateSession()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.session.Close()
+	setDBconnection()
 
-	log.Println("Успешное подключение к MySQL")
+	log.Println("Успешное подключение к БД")
 
 	log.Println("Регистрация файлов и путей сайта...")
 	err = filepath.Walk("./public", func(path string, info fs.FileInfo, err error) error {
@@ -382,8 +435,13 @@ func main() {
 
 	log.Println("Файлы и пути зарегестрированы")
 
-	log.Println("Прослушивается порт", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Println("Прослушиваются порты", HTTPport, HTTPSport)
+	go func() {
+		if err := http.ListenAndServe(":"+HTTPport, http.HandlerFunc(redirectToHTTPS)); err != nil {
+			log.Printf("Ошибка ListenAndServe: %v", err)
+		}
+	}()
+	http.ListenAndServeTLS(":"+HTTPSport, "/etc/ssl/certificate.crt", "/etc/ssl/private/private.key", nil)
 }
 
 //========================================\\

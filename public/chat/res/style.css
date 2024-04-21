@@ -48,14 +48,19 @@ body {
 }
 
 #qr{
-	height: 100%;
+	height: 128px;
+	width: 128px;
 	border: 0;
+	left: 1%;
+    position: relative;
 }
 
 #footer{
 	background:#606c4952;
 	height:20%;
 	font-family: 'Mulish'; 
+	display: flex;
+	align-items: center;
 }
 
 #header{
@@ -96,14 +101,80 @@ body {
 }
 
 #menu{
-	height: 250px;
-    width: 200px;
+	width: 200px;
+    max-width: 50%;
     background: #333e0b;
     position: absolute;
     display: none;
-    margin-top: -255px;
     border: #fff solid 2px;
     border-radius: 5px;
+    margin: 10px;
+    bottom: 24.65%;
+}
+
+#password{
+	width: 50%;
+    min-height: 17px;
+    border-bottom: 2px solid #d2d2d2;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-shadow: #131a068c 0.1em 0.1em 0.2em;
+    background: #333e0b;
+    padding: 1px;
+    color: #d2d2d2;
+    background-color: #333e0bb8;
+    font-family: 'Mulish';
+    margin: 5px;
+}
+
+#check-password{
+    margin: 5px;
+    padding-top: 0.4%;
+    background: #00000070;
+    min-height: 25px;
+    border-radius: 3px;
+    top: 26%;
+    left: 6%;
+    font-size: 0.9em;
+    color: #fefefe;
+    font-weight: 500;
+    transform-origin: 0 0;
+    transform: translate3d(0, 0, 0);
+    transition: all 0.2s ease;
+    border: 0;
+    box-shadow: inset 0 -1px 0 rgb(0 0 0 / 30%);
+    font-family: 'Mulish';
+}
+
+#set-password{
+	min-height: 17px;
+    width: 100%;
+    margin: 2.5px;
+    color: #fff;
+    border-bottom: 2px solid #d2d2d2;
+}
+
+#set-password:empty:before {
+    content: 'Введите новый пароль';
+}
+
+#apply-settings{
+	margin: 2.5px;
+    width: 97%;
+    background: #ffffff20;
+    min-height: 25px;
+    border-radius: 3px;
+    top: 26%;
+    left: 6%;
+    font-size: 0.9em;
+    color: #ffffffde;
+    font-weight: 500;
+    transform-origin: 0 0;
+    transform: translate3d(0, 0, 0);
+    transition: all 0.2s ease;
+    border: 0;
+    box-shadow: inset 0 -1px 0 rgb(0 0 0 / 30%);
+    font-family: 'Mulish';
 }
 
 #id-name{
@@ -264,10 +335,12 @@ body {
 }
 
 #theerror{
+	display: flex;
+    flex-direction: column;
+    align-items: center;
 	background: #b1c755;
     width: 70%;
     color: #121212;
-    text-align: center;
 	border-radius: 10px;
 }
 

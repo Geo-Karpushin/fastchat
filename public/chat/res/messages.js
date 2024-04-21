@@ -1,4 +1,4 @@
-let socket = new WebSocket("ws://"+document.location.host+"/speaker");
+let socket = new WebSocket("wss://"+document.location.host+"/speaker");
 const reader = new FileReader();
 let messages = document.getElementById("messages-container");
 let inText = document.getElementById("inText");
@@ -6,25 +6,31 @@ let inFiles = document.getElementById("inFiles");
 let thisFiles = [];
 let awaitingFileName="";
 let idName = document.getElementById("id-name");
+let setPassword = document.getElementById("set-password");
 reader.addEventListener('load', readFile);
 
 
 let id=(document.location+"").split('?')[1];
-if (id==undefined){
-	let id=(document.location+"").split('%3F')[1];
-}
 
 socket.onopen = () => {
 	console.log("Подключение успешно");
-	if(id!=undefined){
+	if(id!=undefined && id!="undefined"){
 		if(id=="EOF"){
 			document.getElementById("mainpage").style.display="none"; 
 			document.getElementById("errorpage").style.display="flex"; 
 			idName.innerText = "400";
 		}else{
 			idName.innerText = "ID: "+id;
-			document.getElementById("qr").src="http://qrcoder.ru/code/?"+document.location.href+"&4&0";//"http://qrcoder.ru/code/?http%3A%2F%2F185.22.233.219%3A3000%2Fchat%2F%3F"+id+"&4&0";
-			socket.send("1"+id);
+			const qrcode = new QRCode(document.getElementById('qr'), {
+				text: document.URL,
+				width: 128,
+				height: 128,
+				colorDark : '#333e0b',
+				colorLight : '#ffffff00',
+				correctLevel : QRCode.CorrectLevel.H
+			});
+			//document.getElementById("qr").src="http://qrcoder.ru/code/?"++"&4&0";//"http://qrcoder.ru/code/?http%3A%2F%2F185.22.233.219%3A3000%2Fchat%2F%3F"+id+"&4&0";
+			socket.send("1"+id+"");
 		}
 	}else{
 		document.getElementById("mainpage").style.display="none";
@@ -65,6 +71,21 @@ socket.onmessage = (msg) => {
 			}else{
 				addMessage(2, mess, time, false);
 			}
+		}else if (code=="3"){
+			document.getElementById("mainpage").style.display="block"; 
+			document.getElementById("errorpage").style.display="none";
+			idName.innerText = id;
+		}else if (code=="5"){
+			document.getElementById("theerror").innerHTML=`
+			<div id="theerror">
+				<p>Для доступа к чату введите пароль и нажмите на кнопку "Открыть"</p>
+				<div id="password" contenteditable=""></div>
+				<button id="check-password" onclick="checkPassword();">Открыть</button>
+			</div>
+			`;
+			document.getElementById("mainpage").style.display="none"; 
+			document.getElementById("errorpage").style.display="flex"; 
+			idName.innerText = "403";
 		}else{
 			let mess=msg.data.substring(0,msg.data.length-33);
 			let time=msg.data.substring(msg.data.length-33,msg.data.length);
@@ -76,6 +97,10 @@ socket.onmessage = (msg) => {
 		download(url);
 		addMessage(1,"Файл "+awaitingFileName+" загружается, не закрывайте страницу, пока он не появится в папке загрузок для этого браузера.", "00:00", false);
 	}
+}
+
+function checkPassword(){
+	socket.send("1"+id+""+document.getElementById("password").innerText);
 }
 
 function download(url) {
@@ -235,6 +260,10 @@ function send(){
 	if(inFiles.files.length!=0){
 		sendFiles();
 	}
+}
+
+function applySettings(){
+	socket.send("5"+setPassword.innerText);
 }
 
 inFiles.onchange = () => {

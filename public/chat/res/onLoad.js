@@ -50,7 +50,7 @@ window.onload = function(){
 
 document.addEventListener("click", function(e) {
 	let m = document.getElementById('menu');
-	if (e.target.id != 'settings-container' && e.target.id != 'settings' && e.target.id != 'menu') {
+	if (e.target.id != 'settings-container' && e.target.id != 'settings' && e.target.id != 'menu' && e.target.parentElement.id != 'menu') {
 		m.style.display = 'none';
 	} else if (e.target.id == 'settings' || e.target.id=='settings-container') {
 		m.style.display = (m.style.display != 'block') ? 'block' : 'none';
