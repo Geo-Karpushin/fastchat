@@ -164,9 +164,56 @@ body {
 }
 
 #footer{
-	background:#606c4952;
-	height:40%;
-	font-family: 'Mulish';
+height: 20%;
+background: rgba(55,55,55,0.3);
+padding: 1% 0px;
+font-family: 'Mulish';
+text-align:center;
+}
+
+#footer .row{
+width:100%;
+margin:1% 0%;
+padding:0.6% 0%;
+color:lightgray;
+font-size:0.8em;
+}
+
+#footer .row a{
+text-decoration:none;
+color:lightgray;
+transition:0.5s;
+}
+
+#footer .row a:hover{
+color:#fff;
+}
+
+#footer .row ul{
+width:100%;
+}
+
+#footer .row ul li{
+display:inline-block;
+margin:0px 30px;
+}
+
+#footer .row a i{
+font-size:2em;
+margin:0% 1%;
+}
+
+@media (max-width:720px){
+	#footer{
+		text-align: center;
+	}
+	#footer .row ul li{
+	display:block;
+	text-align:left;
+	}
+	#footer .row a i{
+	margin:0% 3%;
+	}
 }
 
 #header{

@@ -50,10 +50,10 @@
 					<label class="icon-button" id = "openFiles" for="inFiles"><img class="icon" src="./res/imgs/addFiles.svg"></label>
 					<input id="inFiles" type="file" multiple>
 					<div id="inText">
-						<div class="text" contenteditable>
+						<div id="text" contenteditable>
 							
 						</div>
-						<div class="files">
+						<div id="files">
 							
 						</div>
 					</div>
@@ -69,12 +69,26 @@
 				</section>
 			</main>
 			<footer id="footer">
-				<div id="qr">
+				<div id = "footer-text">
+					<div class="row">
+						<ul>
+							<li><a href="https://t.me/fastchatspace">Телеграм канал</a></li>
+							<li><a href="mailto:info.fastchat@gmail.com">Администрация</a></li>
+							<li><a href="mailto:geokarpushin@gmail.com">Владелец</a></li>
+							<li><a href="../res/user-agreement.docx" download="Пользовательское Соглашение.docx">Пользовательские Соглашение</a></li>
+						</ul>
+					</div>
+
+					<div class="row">
+						Fast Chat 2022-2023
+					</div>
+				</div>
+				<div id="qr"></div>
 			</footer>
 		</section>
 		<section id="errorpage">
 			<div id="theerror">
-				<p>Произошла ошибка загрузки чата: Вверённый ID не поддерживается.</p>
+				<p>Произошла ошибка загрузки чата: Введённый ID не поддерживается.</p>
 				<p>Вы можете <a href="../chat">создать пустой чат</a> или <a href="../">вернуться на главную страницу</a> и создать чат с ID, 
 				состоящим из символов латинского алфавита и цифр (a..z, A..Z, 1..9) более 4 и менее 11 символов в длину, или ввести существующий ID чата.</p>
 			</div>

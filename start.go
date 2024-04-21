@@ -4,413 +4,83 @@ package main
 
 import (
 	"context"
-	"crypto/sha1"
-	"encoding/base64"
-	"fmt"
-	"io/fs"
+	"encoding/json"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gocql/gocql"
 	"github.com/gorilla/websocket"
 )
 
-//========================================\\
-
 //=================TYPES==================\\
 
 type user struct {
-	c *websocket.Conn
-	i string
+	c   *websocket.Conn
+	i   string
+	mux sync.Mutex
 }
 
 type DBConnection struct {
 	cluster *gocql.ClusterConfig
 	session *gocql.Session
+	mux     sync.Mutex
 }
 
-//========================================\\
+type Users struct {
+	u   map[string][](*user)
+	mux sync.Mutex
+}
+
+type Message struct {
+	Code int    `json:"code"`
+	Text string `json:"text"`
+	Time string `json:"time"`
+}
 
 //=================CONFIG=================\\
 
-const maxIDlen int = 5
+const version string = "v0.4.0"
+const updateDay string = "18.05.2023 00:00"
+const maxIDlen int = 11
+const minIDlen int = 4
+const generateIDlen = 5
 const HTTPSport string = "443"
 const HTTPport string = "80"
-const SELFNAME = "fastchat.space"
 const maxSizeInBytes = 10485760
-const timeLayout = "2006-01-02 15:04:05.000 +0000 UTC"
+const timeLayout = "2006-01-02T15:04:05.999-0700"
+const runesForIDLen = 36
 
 var db DBConnection
 var ctx context.Context
-var upgrader = websocket.Upgrader{}
-var msAct bool
-var temp []byte
-var users map[string][]user
-var IsLetter = regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString
+var users Users
+var IsLetter = regexp.MustCompile(`^[a-z0-9]+$`).MatchString
+var runesForID = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
 
-//========================================\\
+/*
+Запросы от клиента:
+0 - установка подключения
+1 - сообщение
+2 - файл
+3 - новый пароль
+4 - старые сообщения
+5 - проверить пароль
+6 - запрос файла
+
+Запросы от сервера:
+0 - установка подключения (сменить ID с перезагрузкой)
+1 - сообщение
+2 - файл
+3 - сменить ID без перезагрузки страницы
+5 - проверить пароль (запрос)
+*/
 
 //=================CODE===================\\
-
-func makeUser(с *websocket.Conn, i string) (newu user) {
-	newu.c = с
-	newu.i = i
-	return newu
-}
-
-func ADD(self *user) {
-	users[(*self).i] = append(users[(*self).i], (*self))
-}
-
-func DEL(id string, ip string) {
-	for i := 0; i < len(users[id]); i++ {
-		if users[id][i].c.RemoteAddr().String() == ip {
-			users[id] = append(users[id][:i], users[id][i+1:]...)
-		}
-	}
-	if len(users[id])==0{
-		delete(users, id)
-	}
-}
-
-func speaker(w http.ResponseWriter, r *http.Request) {
-	c, err := websocket.Upgrade(w, r, nil, maxSizeInBytes, maxSizeInBytes)
-	c.SetReadLimit(maxSizeInBytes)
-	if err != nil {
-		log.Print("upgrade:", err)
-		return
-	}
-	defer c.Close()
-	chatID := "None"
-	var AFN, AFT string
-	log.Println("Клиент:", r.RemoteAddr+". Подключен.")
-	var cuser user
-	_ = cuser
-	for {
-		messType, mess, err := c.ReadMessage()
-		if err != nil {
-			log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Возможная ошибка (норма: 1000, 1001, 1005, 1006):", err)
-			break
-		} else {
-			if messType == 1 {
-				rMess := []rune(string(mess))
-				code := string(rMess[0:2])
-				ac := strings.Split(string(mess), code)[1]
-				if code == "1" {                                                                                       //Новый идентификатор
-					if ac != "" {
-						temp := strings.Split(ac, "")
-						var id, pass string = strings.ToLower(temp[0]), ""
-						if checkChatExist(id) {
-							rpass := checkChatPass(id)
-							log.Println("Клиент:", r.RemoteAddr+", подключается к чату", id)
-							if len(temp) == 2 {
-								pass = temp[1]
-							}
-							if rpass == pass{
-								chatID = id
-								log.Println("Клиент:", r.RemoteAddr+", подключен к чату", chatID)
-								
-								messages := checkMessages(chatID)
-								
-								for i := 0; i < len(messages); i++ {
-									err = c.WriteMessage(1, []byte(messages[i]))
-									if err != nil {
-										log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Возможная ошибка отправки сообщений после кода 1 в speaker():", err)
-										break
-									}
-								}
-								
-								cuser = makeUser(c, chatID)
-								ADD(&cuser)
-								
-								mess=[]byte("3")
-							}else{
-								log.Println("Клиент:", r.RemoteAddr,"ввёл неверный пароль от чата", id)
-								mess=[]byte("5")
-							}
-						} else if IsLetter(id) && len(id) >= 5 && len(id) <= 10 && id!="undefined" && id!="chats"{
-							chatID = id
-							cuser = makeUser(c, chatID)
-							ADD(&cuser)
-							log.Println("Клиент:", r.RemoteAddr+", создал чат", chatID)
-							makeNewChat(chatID)
-							continue
-						} else {
-							mess = []byte("4EOF")
-						}
-					} else {
-						chatID = makeNewChat("")
-						mess = []byte("4" + chatID)
-						cuser = makeUser(c, chatID)
-						ADD(&cuser)
-						log.Println("Клиент:", r.RemoteAddr+", создал чат", chatID)
-					}
-				} else if chatID != "None"{
-					if code == "2" {                                                                                   //Сообщение о скорой отправке файла с AFN (имя + время)
-						if ac != "" {
-							log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Скоро придёт файл с AFN =", ac)
-							rac := []rune(ac)
-							AFN = ac
-							AFT = string(rac[len(rac)-33:])
-							if err != nil {
-								log.Panic(err)
-								AFN = ""
-							}
-							continue
-						} else {
-							mess = []byte("Ошибка отправки файла, имя должно быть не пустым")
-							log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Ошибка отправки файла, имя должно быть не пустым.")
-						}
-					} else if code == "3" {                                                                            //Запрос более старых сообщений
-						ctime, err := time.Parse(timeLayout, ac)
-						if err != nil {
-							log.Panic(err)
-						}
-						
-						messages := checkOldMessages(chatID, ctime)
-								
-						for i := 0; i < len(messages); i++ {
-							err = c.WriteMessage(1, []byte("6"+messages[i]))
-							if err != nil {
-								log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Возможная ошибка отправки сообщений после кода 1 в speaker():", err)
-								break
-							}
-						}
-					} else if code == "4" {                                                                            //Запрос файл по хешу имени
-						log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Запрошен файл", ac)
-						sendFile(ac, chatID, c)
-						continue
-					} else if code == "5" {                                                                            //Запрос на смену пароля
-						err := ExecuteQuery("INSERT INTO chats (id, password) VALUES (?, ?)", chatID, ac)
-						if err != nil {
-							log.Panic(err)
-							mess = []byte("Ошибка. Пароль не установлен.")
-							log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Ошибка смены пароля:", err)
-						}else{
-							log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Установлен новый пароль -", ac)
-							for i := 0; i < len(users[chatID]); i++ {
-								err = users[chatID][i].c.WriteMessage(1, []byte("1" + chatID))
-								if err != nil {
-									log.Println("Клиент:", users[chatID][i].c.RemoteAddr().String()+", чат:", chatID+". При смене пароля произошла ошибка:", err)
-								}
-							}
-							continue
-						}
-					} else {                                                                                            //Обычное текстовое сообщение
-						ac = string(rMess[0 : len(rMess)-33])
-						date, err := time.Parse(timeLayout, string(rMess[len(rMess)-33:]))
-						if err != nil {
-							log.Panic(err)
-						}
-						save(chatID, false, ac, date, nil)
-						log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Сообщение:", ac)
-						continue
-					}
-				}else{
-					log.Println("Клиент:", r.RemoteAddr, "был подключен без чата.")
-					break
-				}
-			} else if chatID != "None" && messType == 2 {
-				if len(mess)>maxSizeInBytes{
-					log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Файл "+string([]byte(AFN)[:len([]byte(AFN))-33])+" превышает допустимый размер")
-					AFN=""
-					AFT=""
-					break
-				}
-				if AFN != "" && AFT != "" {
-					ctime, err := time.Parse(timeLayout, AFT)
-					if err != nil {
-						log.Panic(err)
-					}
-					save(chatID, true, AFN, ctime, mess)
-					log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Файл:", AFN)
-					AFN = ""
-					AFT = ""
-					continue
-				} else {
-					messType = 1
-					mess = []byte("Пришёл файл без имени, повторите отправку.")
-					log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Пришёл файл, хотя не ожидался.")
-				}
-			} else {
-				log.Println("Клиент:", r.RemoteAddr, "попытался отправить байты без чата.")
-				break
-			}
-			err = c.WriteMessage(messType, mess)
-			if err != nil {
-				log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Возможная ошибка отправки сообщения в повторителе speaker():", err)
-				break
-			}
-		}
-	}
-	log.Println("Клиент:", r.RemoteAddr, "отключен.")
-	DEL(chatID, r.RemoteAddr)
-	return
-}
-
-func getHash(in []byte) string {
-	hasher := sha1.New()
-	hasher.Write(in)
-	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
-	return sha
-}
-
-func sendFile(name string, id string, c *websocket.Conn) {
-	var file []byte
-	err := db.session.Query("SELECT seconddata FROM \""+id+"\" WHERE type = true AND mess=? LIMIT 1 ALLOW FILTERING", name).Scan(&file)
-	if err != nil {
-		log.Panic(err)
-	}
-	err = c.WriteMessage(2, file)
-	if err != nil {
-		log.Println("Клиент:", c.RemoteAddr().String()+", чат:", id+". Возможная ошибка отправки сообщения в sendFile():", err)
-		return
-	}
-	return
-}
-
-func checkFileCollision(id string, file []byte) string {
-	res := db.session.Query("SELECT mess FROM \""+id+"\" WHERE seconddata=? LIMIT 1 ALLOW FILTERING", file).WithContext(ctx).Iter().Scanner()
-	if res.Next() {
-		var n string
-		err := res.Scan(&n)
-		if err != nil {
-			log.Panic(err)
-		}
-		return n
-	}
-	return ""
-}
-
-func save(chatID string, mtype bool, mess string, date time.Time, seconddata []byte) {
-	hMess := mess
-	if mtype {
-		hMess = getHash([]byte(mess))
-		if cfe := checkFileCollision(chatID, seconddata); cfe != "" {
-			save(chatID, false, "2"+string([]byte(mess)[:len([]byte(mess))-33])+""+cfe, date, []byte{})
-			return
-		}
-	}
-	err := ExecuteQuery("INSERT INTO \""+chatID+"\" (type, mess, date, seconddata) VALUES (?,?,?,?)", mtype, hMess, date, seconddata)
-	if err != nil {
-		for i := 0; i < len(users[chatID]); i++ {
-			err = users[chatID][i].c.WriteMessage(1, []byte("Ошибка сохранения сообщения"+mess+date.Format(timeLayout)))
-			if err != nil {
-				log.Println("Клиент:", users[chatID][i].c.RemoteAddr().String()+", чат:", chatID+". Возможная ошибка отправки сообщения об ошибке в messageSaver():", err)
-			}
-		}
-		log.Panic(err)
-	} else {
-		if mtype {
-			save(chatID, false, "2"+string([]byte(mess)[:len([]byte(mess))-33])+""+hMess, date, []byte{})
-		} else {
-			for i := 0; i < len(users[chatID]); i++ {
-				err = users[chatID][i].c.WriteMessage(1, []byte(hMess+date.Format(timeLayout)))
-				if err != nil {
-					log.Println("Клиент:", users[chatID][i].c.RemoteAddr().String()+", чат:", chatID+". Возможная ошибка отправки сообщения в messageSaver():", err)
-				}
-			}
-		}
-	}
-}
-
-func makeID() string {
-	rand.Seed(time.Now().UnixNano())
-	var ans []string
-	IDalphabet := [...]string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "g", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
-	for i := 0; i < maxIDlen; i++ {
-		ans = append(ans, IDalphabet[rand.Intn(len(IDalphabet))])
-	}
-	return strings.Join(ans, "")
-}
-
-func makeNewChat(id string) string {
-	if id == "" {
-		id = makeID()
-	}
-	err := ExecuteQuery("INSERT INTO chats (id) VALUES (?)", id)
-	if err != nil {
-		log.Panic(err)
-	}
-	err = ExecuteQuery("CREATE TABLE IF NOT EXISTS \"" + id + "\" (type BOOLEAN, mess VARCHAR, date TIMESTAMP, seconddata BLOB, PRIMARY KEY ((type),date)) WITH CLUSTERING ORDER BY(date DESC)")
-	if err != nil {
-		log.Println(err)
-	}
-	return id
-}
-
-func checkChatExist(lid string) bool {
-	res := db.session.Query("SELECT id FROM chats WHERE id=?", lid).WithContext(ctx).Iter().Scanner()
-	return res.Next()
-}
-
-func checkChatPass(lid string) (pass string) {
-	err := db.session.Query("SELECT password FROM chats WHERE id=?", lid).WithContext(ctx).Consistency(gocql.One).Scan(&pass)
-	if err != nil{
-		log.Panic(err)
-	}
-	return
-}
-
-func checkOldMessages(lid string, ltime time.Time) []string {
-	res := db.session.Query("SELECT mess, date FROM \"" + lid + "\" WHERE type = false AND date < ? LIMIT 50", ltime).WithContext(ctx).Iter().Scanner()
-	masmess := []string{}
-	for res.Next() {
-		mess := ""
-		var ctime time.Time
-		if err := res.Scan(&mess, &ctime); err != nil {
-			log.Println(err)
-			return []string{"Ошибка загрузки данных чата, повторите попытку позже. Если ошибка сохраниться - обратитесь в техническую поддержку."}
-		}
-		masmess = append(masmess, mess+ctime.Format(timeLayout))
-	}
-	return masmess
-}
-
-func checkMessages(lid string) []string {
-	res := db.session.Query("SELECT mess, date FROM \"" + lid + "\" WHERE type = false LIMIT 50").WithContext(ctx).Iter().Scanner()
-	masmess := []string{}
-	for res.Next() {
-		mess := ""
-		var ctime time.Time
-		if err := res.Scan(&mess, &ctime); err != nil {
-			log.Println(err)
-			return []string{"Ошибка загрузки данных чата, повторите попытку позже. Если ошибка сохраниться - обратитесь в техническую поддержку."}
-		}
-		masmess = append(masmess, mess+ctime.Format(timeLayout))
-	}
-	for i, j := 0, len(masmess)-1; i < j; i, j = i+1, j-1 {
-		masmess[i], masmess[j] = masmess[j], masmess[i]
-	}
-	return masmess
-}
-
-func ExecuteQuery(query string, values ...interface{}) error {
-	err := db.session.Query(query).Bind(values...).Exec()
-	return err
-}
-
-func setDBconnection(){
-	var err error
-	db.cluster = gocql.NewCluster("localhost")
-	db.cluster.Keyspace = "fastchat"
-	db.cluster.Consistency = gocql.Quorum
-	db.session, err = db.cluster.CreateSession()
-	if err != nil {
-		setDBconnection()
-    }
-}
-
-func redirectToHTTPS(w http.ResponseWriter, r *http.Request) {
-	log.Println("Redirecting",r.RemoteAddr,"to","https://"+r.Host+":"+HTTPSport+r.RequestURI)
-    http.Redirect(w, r, "https://"+r.Host+":"+HTTPSport+r.RequestURI, http.StatusMovedPermanently)
-}
 
 func main() {
 	f, err := os.OpenFile("logs", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -421,11 +91,11 @@ func main() {
 
 	log.SetOutput(f)
 
-	log.Println("v0.3.8 ---------==== FASTCHAT ====--------- 12.03.2023 15:10")
-	log.Println("Сервер запущен.")
+	log.Println(version + "---------==== FASTCHAT ====---------" + updateDay)
+	log.Println("Запуск сервера...")
 	defer log.Println("Завершение работы...")
 
-	users = make(map[string][]user)
+	users.u = make(map[string][](*user))
 	ctx = context.Background()
 
 	log.Println("Подключение к БД...")
@@ -435,44 +105,371 @@ func main() {
 	log.Println("Успешное подключение к БД")
 
 	log.Println("Регистрация файлов и путей сайта...")
-	err = filepath.Walk("./public", func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			log.Println("Ошибка доступа к", path, "-", err)
-			return nil
-		}
-		if !info.IsDir() {
-			curpath := strings.Replace(strings.Replace(strings.Replace(path, "\\", "/", -1), "public", "", -1), "index.html", "", -1)
-			log.Println("Регистрация", curpath)
-			http.HandleFunc(curpath, func(w http.ResponseWriter, r *http.Request) {
-				if curpath == r.URL.Path {
-					http.ServeFile(w, r, path)
-				} else {
-					fmt.Fprintf(w, "Страница не найдена. 404.")
-				}
-			})
-			return nil
-		} else {
-			log.Println("-->", path)
-		}
-		return nil
-	})
-	if err != nil {
-		log.Panic(err)
-		return
-	}
 
-	log.Println("Регистрация /speaker")
+	http.Handle("/", http.FileServer(http.Dir("./public")))
 	http.HandleFunc("/speaker", speaker)
 
 	log.Println("Файлы и пути зарегестрированы")
 
-	log.Println("Прослушиваются порты", HTTPport, HTTPSport)
+	log.Println("Сервер запущен. Прослушиваются порты", HTTPport, HTTPSport)
 	go func() {
 		if err := http.ListenAndServe(":"+HTTPport, http.HandlerFunc(redirectToHTTPS)); err != nil {
 			log.Printf("Ошибка ListenAndServe: %v", err)
 		}
 	}()
+	//log.Fatal(http.ListenAndServe(":3000", nil))
 	http.ListenAndServeTLS(":"+HTTPSport, "/etc/ssl/certificate.crt", "/etc/ssl/private/private.key", nil)
 }
 
-//========================================\\
+func redirectToHTTPS(w http.ResponseWriter, r *http.Request) {
+	log.Println("Redirecting", r.RemoteAddr, "to", "https://"+r.Host+":"+HTTPSport+r.RequestURI)
+	http.Redirect(w, r, "https://"+r.Host+":"+HTTPSport+r.RequestURI, http.StatusMovedPermanently)
+}
+
+func setDBconnection() {
+	db.mux.Lock()
+	var err error
+	db.cluster = gocql.NewCluster("localhost")
+	db.cluster.Keyspace = "fastchat"
+	db.cluster.Consistency = gocql.Quorum
+	db.session, err = db.cluster.CreateSession()
+	db.mux.Unlock()
+	if err != nil {
+		setDBconnection()
+	}
+}
+
+func ADD(chatID string, cuser *user) {
+	cuser.mux.Lock()
+	users.mux.Lock()
+	users.u[chatID] = append(users.u[chatID], cuser)
+	users.mux.Unlock()
+	cuser.mux.Unlock()
+}
+
+func DEL(chatID string, ip string) {
+	users.mux.Lock()
+	for i := 0; i < len(users.u[chatID]); i++ {
+		users.u[chatID][i].mux.Lock()
+		if users.u[chatID][i].i == ip {
+			users.u[chatID] = append(users.u[chatID][:i], users.u[chatID][i+1:]...)
+		}
+		users.u[chatID][i].mux.Unlock()
+	}
+	if len(users.u[chatID]) == 0 {
+		delete(users.u, chatID)
+	}
+	users.mux.Unlock()
+}
+
+func speaker(w http.ResponseWriter, r *http.Request) {
+	c, err := websocket.Upgrade(w, r, nil, maxSizeInBytes, maxSizeInBytes)
+	c.SetReadLimit(maxSizeInBytes)
+	if err != nil {
+		log.Print("Upgrade error:", err)
+		return
+	}
+	var chatID string
+	var cuser user
+	var mess Message
+	defer c.Close()
+	defer log.Println("Клиент:", r.RemoteAddr, "отключен.")
+	defer DEL(chatID, r.RemoteAddr)
+	log.Println("Клиент:", r.RemoteAddr+". Подключен.")
+	for {
+		messType, inBin, err := c.ReadMessage()
+		if err != nil {
+			log.Panic(err)
+			break
+		}
+		if messType == 8 {
+			break
+		} else if messType == 1 {
+			err = json.Unmarshal(inBin, &mess)
+			if err != nil {
+				log.Panic(err)
+			}
+			switch mess.Code {
+			case 0:
+				mess.Text = strings.ToLower(mess.Text)
+				lenMessText := len(mess.Text)
+				if mess.Text != "" && IsLetter(mess.Text) && lenMessText > minIDlen && lenMessText < maxIDlen {
+					exist, setPassword := checkChat(mess.Text)
+					if setPassword != "" {
+						mess = Message{5, "", time.Now().Format(timeLayout)}
+					} else if exist {
+						chatID = mess.Text
+						mess = Message{3, chatID, time.Now().Format(timeLayout)}
+						log.Println("Клиент:", r.RemoteAddr+", подключен к чату:", chatID+".")
+						cuser.c = c
+						cuser.i = r.RemoteAddr
+						ADD(chatID, &cuser)
+						messes := checkMessages(chatID, time.Now())
+						for i := 0; i < len(messes); i++ {
+							out, err := json.Marshal(messes[i])
+							if err != nil {
+								log.Panic(err)
+							}
+							c.WriteMessage(1, out)
+						}
+					} else {
+						chatID = makeChat(mess.Text)
+						mess = Message{3, chatID, time.Now().Format(timeLayout)}
+						log.Println("Клиент:", r.RemoteAddr+", создал чат с заданым идентификатором:", chatID+".")
+						cuser.c = c
+						cuser.i = r.RemoteAddr
+						ADD(chatID, &cuser)
+					}
+				} else if mess.Text == "" {
+					chatID = makeChat("")
+					mess = Message{3, chatID, time.Now().Format(timeLayout)}
+					log.Println("Клиент:", r.RemoteAddr+", создал чат:", chatID+".")
+					cuser.c = c
+					cuser.i = r.RemoteAddr
+					ADD(chatID, &cuser)
+				} else {
+					mess = Message{3, "EOF", time.Now().Format(timeLayout)}
+				}
+			case 1:
+				if chatID != "" {
+					save(chatID, mess, nil)
+					log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Получено сообщение:", mess.Text)
+				}
+				mess = Message{}
+				continue
+			case 2:
+				if chatID != "" {
+					log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Получено название файла:", mess.Text)
+				}
+				continue
+			case 3:
+				if chatID != "" {
+					newPassword(chatID, mess.Text)
+					log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Смена пароля на:", mess.Text)
+					mess = Message{0, chatID, time.Now().Format(timeLayout)}
+					out, err := json.Marshal(mess)
+					if err != nil {
+						log.Panic(err)
+					}
+					users.mux.Lock()
+					for i := 0; i < len(users.u[chatID]); i++ {
+						users.u[chatID][i].mux.Lock()
+						err := users.u[chatID][i].c.WriteMessage(1, out)
+						if err != nil {
+							log.Panic(err)
+						}
+						users.u[chatID][i].c.Close()
+						users.u[chatID][i].mux.Unlock()
+					}
+					delete(users.u, chatID)
+					users.mux.Unlock()
+				}
+				mess = Message{}
+				continue
+			case 4:
+				if chatID != "" {
+					log.Println("Клиент:", r.RemoteAddr+", запросил сообщения от", mess.Time, "в чате:", chatID+".")
+					oldestime, err := time.Parse(timeLayout, mess.Time)
+					if err != nil {
+						log.Panic(err)
+					}
+					messes := checkMessages(chatID, oldestime)
+					for i := 0; i < len(messes); i++ {
+						out, err := json.Marshal(messes[i])
+						if err != nil {
+							log.Panic(err)
+						}
+						c.WriteMessage(1, out)
+					}
+				}
+				mess = Message{}
+				continue
+			case 5:
+				exist, setPassword := checkChat(mess.Text)
+				if exist && setPassword != "" {
+					if setPassword == mess.Time {
+						chatID = mess.Text
+						cuser.c = c
+						cuser.i = r.RemoteAddr
+						ADD(chatID, &cuser)
+						messes := checkMessages(chatID, time.Now())
+						for i := 0; i < len(messes); i++ {
+							out, err := json.Marshal(messes[i])
+							if err != nil {
+								log.Panic(err)
+							}
+							c.WriteMessage(1, out)
+						}
+						mess = Message{3, chatID, time.Now().Format(timeLayout)}
+					} else {
+						mess = Message{5, "", time.Now().Format(timeLayout)}
+					}
+				} else {
+					mess = Message{1, "Неправильное обращение, повторите попытку (400)", time.Now().Format(timeLayout)}
+				}
+			case 6:
+				if chatID != "" {
+					sendtime, err := time.Parse(timeLayout, mess.Time)
+					if err != nil {
+						log.Panic(err)
+					}
+					getFile(chatID, &cuser, mess.Text, sendtime)
+				}
+				mess = Message{}
+				continue
+			default:
+				log.Println("here")
+				mess = Message{1, "Неправильное обращение, повторите попытку (400)", time.Now().Format(timeLayout)}
+			}
+		} else if messType == 2 && chatID != "" && mess.Code == 2 {
+			save(chatID, mess, inBin)
+			mess = Message{}
+			continue
+		} else {
+			mess = Message{1, "Неправильное обращение, повторите попытку (400)", time.Now().Format(timeLayout)}
+		}
+		out, err := json.Marshal(mess)
+		if err != nil {
+			log.Panic(err)
+		}
+		c.WriteMessage(1, out)
+		mess = Message{}
+	}
+	return
+}
+
+func newPassword(chatID string, newPassword string) {
+	err := ExecuteQuery("INSERT INTO chats (id, password) VALUES (?, ?)", chatID, newPassword)
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
+func checkChat(chatID string) (exist bool, pass string) {
+	db.mux.Lock()
+	err := db.session.Query("SELECT password FROM chats WHERE id=?", chatID).WithContext(ctx).Consistency(gocql.One).Scan(&pass)
+	db.mux.Unlock()
+	if err != nil {
+		return false, ""
+	}
+	return true, pass
+}
+
+func checkMessages(chatID string, oldesttime time.Time) []Message {
+	db.mux.Lock()
+	res := db.session.Query("SELECT type, mess, date FROM messes WHERE chatid = ? AND date < ? LIMIT 50;", chatID, oldesttime).WithContext(ctx).Iter().Scanner()
+	db.mux.Unlock()
+	var masmess []Message
+	for res.Next() {
+		var mess string
+		var ctime time.Time
+		var codeBool bool
+		if err := res.Scan(&codeBool, &mess, &ctime); err != nil {
+			log.Println(err)
+			return []Message{{1, "Ошибка загрузки данных чата, повторите попытку позже. Если ошибка сохраниться - обратитесь в техническую поддержку.", time.Now().Format(timeLayout)}}
+		}
+		code := 1
+		if codeBool {
+			code = 2
+		}
+		masmess = append(masmess, Message{code, mess, ctime.Format(timeLayout)})
+	}
+	return masmess
+}
+
+func ExecuteQuery(query string, values ...interface{}) error {
+	db.mux.Lock()
+	err := db.session.Query(query).Bind(values...).Exec()
+	db.mux.Unlock()
+	return err
+}
+
+func save(chatID string, mess Message, seconddata []byte) {
+	mtype := false
+	if mess.Code == 2 {
+		mtype = true
+	}
+	thetime, err := time.Parse(timeLayout, mess.Time)
+	if err != nil {
+		log.Panic(err)
+	}
+	err = ExecuteQuery("INSERT INTO messes (chatID, type, mess, date, seconddata) VALUES (?,?,?,?,?)", chatID, mtype, mess.Text, thetime, seconddata)
+	if err != nil {
+		log.Panic(err)
+	}
+	byteMess, err := json.Marshal(mess)
+	if err != nil {
+		log.Panic(err)
+	}
+	WriteMessageToAll(chatID, byteMess)
+}
+
+func getFile(chatID string, cuser *user, name string, sendtime time.Time) {
+	db.mux.Lock()
+	res := db.session.Query("SELECT seconddata FROM messes WHERE chatid = ? AND type = ? AND mess = ? AND date = ? LIMIT 50 ALLOW FILTERING;", chatID, true, name, sendtime).WithContext(ctx).Iter().Scanner()
+	db.mux.Unlock()
+	if res.Next() {
+		var seconddata []byte
+		if err := res.Scan(&seconddata); err != nil {
+			log.Println(err)
+			out, err := json.Marshal(Message{1, "Ошибка загрузки данных чата, повторите попытку позже. Если ошибка сохраниться - обратитесь в техническую поддержку.", time.Now().Format(timeLayout)})
+			if err != nil {
+				log.Panic(err)
+			}
+			cuser.mux.Lock()
+			cuser.c.WriteMessage(1, out)
+			cuser.mux.Unlock()
+		}
+		cuser.mux.Lock()
+		out, err := json.Marshal(Message{6, name, time.Now().Format(timeLayout)})
+		if err != nil {
+			log.Panic(err)
+		}
+		cuser.c.WriteMessage(1, out)
+		cuser.c.WriteMessage(2, seconddata)
+		cuser.mux.Unlock()
+	} else {
+		out, err := json.Marshal(Message{1, "Файла не существует.", time.Now().Format(timeLayout)})
+		if err != nil {
+			log.Panic(err)
+		}
+		cuser.mux.Lock()
+		cuser.c.WriteMessage(1, out)
+		cuser.mux.Unlock()
+	}
+}
+
+func WriteMessageToAll(chatID string, mess []byte) {
+	users.mux.Lock()
+	for i := 0; i < len(users.u[chatID]); i++ {
+		users.u[chatID][i].mux.Lock()
+		err := users.u[chatID][i].c.WriteMessage(1, mess)
+		if err != nil {
+			log.Panic(err)
+		}
+		users.u[chatID][i].mux.Unlock()
+	}
+	if len(users.u[chatID]) == 0 {
+		delete(users.u, chatID)
+	}
+	users.mux.Unlock()
+}
+
+func makeRandID() string {
+	b := make([]rune, generateIDlen)
+	for i := range b {
+		b[i] = runesForID[rand.Intn(36)]
+	}
+	return string(b)
+}
+
+func makeChat(id string) string {
+	if id == "" {
+		id = makeRandID()
+	}
+	err := ExecuteQuery("INSERT INTO chats (id) VALUES (?)", id)
+	if err != nil {
+		log.Panic(err)
+	}
+	return id
+}

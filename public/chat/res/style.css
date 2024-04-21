@@ -49,18 +49,67 @@ body {
 
 #qr{
 	height: 128px;
-	width: 128px;
-	border: 0;
-	left: 1%;
-    position: relative;
+    width: 128px;
+    border: 0;
+    left: 1%;
+    position: absolute;
+    bottom: 1%;
 }
 
 #footer{
-	background:#606c4952;
-	height:20%;
-	font-family: 'Mulish'; 
-	display: flex;
-	align-items: center;
+height: 20%;
+background: rgba(55,55,55,0.3);
+padding: 1% 0px;
+font-family: 'Mulish';
+text-align:center;
+}
+
+#footer .row{
+margin:1% 0%;
+padding:0.6% 0%;
+color:lightgray;
+font-size:0.8em;
+min-width: 100px;
+text-align: center;
+margin-left: 132px;
+margin-right: 15px;
+}
+
+#footer .row a{
+text-decoration:none;
+color:lightgray;
+transition:0.5s;
+}
+
+#footer .row a:hover{
+color:#fff;
+}
+
+#footer .row ul{
+width:100%;
+}
+
+#footer .row ul li{
+display:inline-block;
+margin:0px 30px;
+}
+
+#footer .row a i{
+font-size:2em;
+margin:0% 1%;
+}
+
+@media (max-width:720px){
+	#footer{
+		text-align: center;
+	}
+	#footer .row ul li{
+	display:block;
+	text-align:right;
+	}
+	#footer .row a i{
+	margin:0% 3%;
+	}
 }
 
 #header{
@@ -84,6 +133,7 @@ body {
 #mainpage{
 	height:100%;
 	width:100%;
+	display: none;
 }
 
 #errorpage{
@@ -300,7 +350,7 @@ body {
 	max-height: 80px;
 }
 
-#inText .text{
+#text{
 	border-bottom: 2px solid #d2d2d2;
 }
 
