@@ -1,0 +1,32 @@
+<!DOCTYPE HTML>
+<html lang="ru">
+	<head>
+		<title>Fast Chat</title>
+		<link rel="stylesheet" href="res/style.css">
+		<meta charset="utf-8"/>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<script src="res/anime.min.js"></script>
+		<script src="res/spawn-background.js" async></script>
+		<script src="res/script.js" defer></script>
+	</head>
+	<body name="body">
+		<header id="header">
+			<h1 id="name">Fast Chat</h1>
+		</header>
+		<main id="main">
+			<section id="getId">
+				<label for="inp" class="inp">
+					<input type="text" id="inpT" maxlength="5" placeholder="&nbsp;">
+					<span class="label">ID чата (Если есть)</span>
+					<span class="focus-bg"></span>
+				</label>
+			</section>
+			<section id = "startChat">
+				<button id = "startButton" onclick="startChat();">Создать Чат!</button>
+			</section>
+		</main>
+		<footer id="footer">
+		</footer>
+	</body>
+</html>

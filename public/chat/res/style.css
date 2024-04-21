@@ -1,0 +1,187 @@
+@font-face {
+	font-family: 'TerminatorGenisys'; 
+	src: url(../../res/fonts/TerminatorGenisys.ttf); 
+}
+@font-face {
+	font-family: 'NightmareMaker';
+	src: url(../../res/fonts/NightmareMaker.ttf);
+}
+@font-face {
+	font-family: 'Dorblue'; 
+	src: url(../../res/fonts/Dorblue.ttf); 
+}
+
+html, body { 
+	height: 100%;
+	width: 100%;
+	position: static;
+	overflow-x:hidden; 
+	overflow-y:hidden;
+}
+
+body {
+    background: linear-gradient(45deg, #1F6521, #53900F, #A4A71E, #D6CE15);
+    background-size: 200% 200%;
+    animation: gradient 20s ease infinite;
+	top: 0px;
+    left: 0px;
+    position: relative;
+    margin: 0px;
+}
+
+#main{
+	display: flex;
+    height: 65%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#footer{
+	background:#606c4952;
+	height:40%;
+}
+
+#header{
+	height: 15%;
+    display: flex;
+    justify-content: space-between;
+	padding: 1%;
+}
+
+#name{
+	font-family: 'Dorblue'; 
+	-webkit-background-clip: text;
+    -webkit-text-fill-color: #333e0b;
+    font-size: 3.5em;
+    z-index: -1;
+	text-shadow: 0.1em 0.1em 0.2em #131a068c;
+	margin:0;
+}
+
+#id-name{
+	font-family: 'NightmareMaker'; 
+	-webkit-background-clip: text;
+    -webkit-text-fill-color: rgba(51,62,11,0);
+    font-size: 2em;
+    z-index: -1;
+	text-shadow: 0.1em 0.1em 0.2em rgba(19,26,6,0);
+	margin:0;
+	right:1%;
+	padding-top: 8px;
+}
+
+#in{
+	display: contents;
+}
+
+#inFiles{
+	margin: 0.25%;
+}
+
+@keyframes gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+#file-url{
+	color: lightskyblue;
+}
+
+#file-url:hover{
+	text-decoration:underline lightskyblue;
+}
+
+#messages-content
+{
+    position: relative;
+    width: 75%;
+    height: 85%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+#messages
+{
+	display: flex;
+    flex-direction: column-reverse;
+    overflow-y: auto;
+	height: 100%;
+}
+
+#messages-container
+{
+	max-height: 100%;
+    min-height: 30px;
+    overflow: auto;
+	padding: 1%;
+}
+
+#messages-container::-webkit-scrollbar {
+  width: 0;
+}
+
+#inText {
+	width: 80%;
+    margin-bottom: 10px;
+    min-height: 17px;
+    border-bottom: 2px solid #d2d2d2;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-shadow: #131a068c 0.1em 0.1em 0.2em;
+    background: #333e0b;
+    padding: 1px;
+    color: #d2d2d2;
+	background-color: #333e0bb8;
+}
+
+#inText:after {
+	animation: blink 1s linear infinite alternate;
+}
+
+.message
+{
+	margin: 5px;
+    min-height: 15px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 10px;
+    justify-content: flex-end;
+    border: 2px solid #d2d2d2;
+    background-color: #333e0bfc;
+    position: relative;
+    overflow: hidden;
+    padding: 5px;
+	color: #d2d2d2;
+}
+
+.message-text
+{
+	width:100%;
+	text-align:left;
+	word-break: break-all;
+}
+
+.message-time
+{
+	font-size:0.5em;
+	width:100%;
+	text-align:right;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
