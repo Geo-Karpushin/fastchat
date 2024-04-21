@@ -14,7 +14,7 @@ let id=(document.location+"").split('?')[1];
 socket.onopen = () => {
 	console.log("Подключение успешно");
 	if(id!=undefined){
-	idName.innerText = id;
+		idName.innerText = "ID: "+id;
 		socket.send("{~}1"+id);
 	}else{
 		document.getElementById("body").style.display="none";
@@ -50,7 +50,11 @@ socket.onmessage = (msg) => {
 		}else if (code=="{~}2"){
 			let mess=msg.data.substring(4,msg.data.length-14);
 			let time=msg.data.substring(msg.data.length-14,msg.data.length);
-			addMessage(2, mess, time, false);
+			if (mess.includes("{[|4~4~4|]}")){
+				addMessage(3, mess, time, false);
+			}else{
+				addMessage(2, mess, time, false);
+			}
 		}else{
 			let mess=msg.data.substring(0,msg.data.length-14);
 			let time=msg.data.substring(msg.data.length-14,msg.data.length);
@@ -106,6 +110,13 @@ function addMessage(type, text, time, needToSave)
 		let tempMessages = messages.childNodes;
 		
 		tempMessages[tempMessages.length-1].scrollIntoView(false);
+	}else if (type==3){
+		let innerTXT=text.split("{[|4~4~4|]}")
+		messages.innerHTML += '<div class = "message"><div class="message-text"><a id="file-url" onclick="getCurFile(`'+innerTXT[0]+'`,`'+innerTXT[1]+'`);" download="'+innerTXT[0]+'">'+innerTXT[0]+'</a></div><div class="message-time">'+time+'</div></div>';
+		awaitingFileName="";
+		let tempMessages = messages.childNodes;
+		
+		tempMessages[tempMessages.length-1].scrollIntoView(false);
 	}
 }
 
@@ -114,9 +125,15 @@ function goodDate(date){
 }
 
 function getFile(event){
-	socket.send("{~}3"+event.target.innerText);
-	console.log("{~}3"+event.target.innerText);
+	let ctime = event.target.parentNode.parentNode.getElementsByClassName("message-time")[0].innerText
+	socket.send("{~}3"+event.target.innerText+ctime.substring(6,10)+ctime.substring(3,5)+ctime.substring(0,2)+ctime.substring(12).replaceAll(":",""));
 	awaitingFileName=event.target.innerText
+}
+
+function getCurFile(name,hash){
+	console.log("{~}4"+hash);
+	socket.send("{~}4"+hash);
+	awaitingFileName=name
 }
 
 function sendFiles(){

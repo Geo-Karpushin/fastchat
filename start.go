@@ -5,14 +5,16 @@ package main
 import (
 	_"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/websocket"
+	"encoding/base64"
     "path/filepath"
 	"database/sql"
 	"encoding/hex"
+	"crypto/sha1"
 	"math/rand"
 	"net/http"
 	"strings"
-	"time"
 	"io/fs"
+	"time"
 	"log"
 	"fmt"
 )
@@ -104,7 +106,7 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer c.Close()
-	chatId:=""
+	chatId:="None"
 	AFF:=""
 	log.Println("Клиент:",r.RemoteAddr+". Подключен.")
 	var cuser user
@@ -113,7 +115,7 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 		flag:=false
 		messType, mess, err := c.ReadMessage()
 		if err != nil {
-			log.Println("Клиент:",r.RemoteAddr+". Возможная ошибка (норма: 1000, 1001, 1005, 1006):", err)
+			log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Возможная ошибка (норма: 1000, 1001, 1005, 1006):", err)
 			break
 		}
 		if messType==1{
@@ -139,12 +141,12 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 					for i:=0; i<len(messages);i++{
 						err = c.WriteMessage(1, []byte(messages[i]))
 						if err != nil {
-							log.Println("Клиент:",r.RemoteAddr+". Возможная ошибка отправки сообщения после кода {~}1 в speaker():", err)
+							log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Возможная ошибка отправки сообщения после кода {~}1 в speaker():", err)
 							break
 						}
 					}
 					if err != nil {
-						log.Println("Клиент:",r.RemoteAddr+". Возможная ошибка отправки сообщения после кода {~}1 в speaker() 2:", err)
+						log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Возможная ошибка отправки сообщения после кода {~}1 в speaker() 2:", err)
 						break
 					}
 					cuser:=makeUser(c,chatId)
@@ -157,9 +159,12 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 				}else{
 					flag=false
 					mess=[]byte("Ошибка отправки файла, имя должно быть не пустым")
-					log.Println("Клиент:",r.RemoteAddr+". Ошибка отправки файла, имя должно быть не пустым.")
+					log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Ошибка отправки файла, имя должно быть не пустым.")
 				}
 			}else if(code=="{~}3"){
+				flag=true
+				sendFile(getHash(ac), chatId, c)
+			}else if(code=="{~}4"){
 				flag=true
 				sendFile(ac, chatId, c)
 			}else{
@@ -168,6 +173,7 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 					ac=string(rMess[0:len(rMess)-14])
 				}
 				SaveMessage(chatId,ac,time,true)
+				log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Сообщение:",ac)
 				flag=true
 			}
 		}else{
@@ -178,18 +184,19 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 				date:=string(rAFF[len(rAFF)-14:])
 				hex:=converToBlobStr(mess)
 				SaveFile(chatId,name,date,hex)
+				log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Файл:",name)
 				messType=1
 				mess=[]byte("{~}2"+AFF)
 				AFF=""
 			}else{
-				log.Println("Клиент:",r.RemoteAddr+". Пришёл файл, хотя не ожидался.")
+				log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Пришёл файл, хотя не ожидался.")
 			}
 			mess=[]byte{}
 		}
 		if !flag{
 			err = c.WriteMessage(messType, mess)
 			if err != nil {
-				log.Println("Клиент:",r.RemoteAddr+". Возможная ошибка отправки сообщения в повторителе speaker():", err)
+				log.Println("Клиент:",r.RemoteAddr+", чат:",chatId+". Возможная ошибка отправки сообщения в повторителе speaker():", err)
 				break
 			}
 		}
@@ -197,6 +204,13 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 	log.Println("Клиент:",r.RemoteAddr+". Отключен.")
 	DEL(chatId, r.RemoteAddr)
 	return
+}
+
+func getHash( in string ) string {
+	hasher := sha1.New()
+    hasher.Write([]byte(in))
+    sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+	return sha
 }
 
 func sendFile(name string, id string, c *websocket.Conn){
@@ -210,11 +224,25 @@ func sendFile(name string, id string, c *websocket.Conn){
 		fBlob:=converFromBlobStr(file)
 		err = c.WriteMessage(2, fBlob)
 		if err != nil {
-			log.Println("Клиент:",c.RemoteAddr().String()+". Возможная ошибка отправки сообщения в sendFile():", err)
+			log.Println("Клиент:",c.RemoteAddr().String()+", чат:",id+". Возможная ошибка отправки сообщения в sendFile():", err)
 			return
 		}
 	}
 	return
+}
+
+func checkFileCollision(id string, data string) string{
+	lochash:=getHash(data)
+	res, err := db.Query("SELECT `name` FROM `f"+id+"` WHERE `hash`='" + lochash +"' LIMIT 1")
+    if err != nil {
+        log.Panic(err)
+    }
+	if res.Next(){
+		var n string
+		res.Scan(&n)
+		return n
+	}
+	return "NOVALUE-NOCOLLISION"
 }
 
 func converToBlobStr(in []byte) (out string){
@@ -230,15 +258,14 @@ func converFromBlobStr(in string) []byte{
 	return decodedByteArray
 }
 
-func SaveMessage(chatId string, text string, time string,flag bool){
+func SaveMessage(chatId string, text string, time string, flag bool){
 	qm.push(makeMess(chatId,text,time,false))
 	if !msAct && flag{
 		messageSaver()
 	}
 }
 func SaveFile(chatId string, name string, date string, data string){
-	qm.push(makeMess(chatId,name,data,true))
-	SaveMessage(chatId,"{~}2"+name,date,false)
+	qm.push(makeMess(chatId,name+date,data,true))
 	if !msAct{
 		messageSaver()
 	}
@@ -249,20 +276,30 @@ func messageSaver(){
 	if len(qm)>0{
 		lmess:=qm.pop()
 		if lmess.mtype{
-			req:="INSERT INTO `f"+lmess.chat+"` (`name`, `data`) VALUES ('" + lmess.mess + "','" + lmess.date + "')"
-			_, err := db.Exec(req)
-			if err != nil {
-				log.Println(err)
-				name:=qm.pop()
-				for i := 0; i<len(users[lmess.chat]);i++{
-					err = users[lmess.chat][i].c.WriteMessage(1, []byte("Ошибка отправки файла: "+ name.mess[4:]+name.date))
-					if err != nil {
-						log.Println("Клиент:",users[lmess.chat][i].c.RemoteAddr().String()+". Возможная ошибка отправки файла в messageSaver():", err)
+			rName:=[]rune(lmess.mess)
+			ldate:=string(rName[len(rName)-14:])
+			lname:=string(rName[0:len(rName)-14])
+			cfe:=checkFileCollision(lmess.chat, lmess.date)
+			log.Println(cfe)
+			if(cfe=="NOVALUE-NOCOLLISION"){
+				req:="INSERT INTO `f"+lmess.chat+"` (`name`, `data`, `hash`) VALUES ('" + getHash(lmess.mess) + "','" + lmess.date + "','"+ getHash(lmess.date) +"')"
+				_, err := db.Exec(req)
+				if err != nil {
+					log.Println(err)
+					name:=qm.pop()
+					for i := 0; i<len(users[lmess.chat]);i++{
+						err = users[lmess.chat][i].c.WriteMessage(1, []byte("Ошибка отправки файла: "+ name.mess[4:]+name.date))
+						if err != nil {
+							log.Println("Клиент:",users[lmess.chat][i].c.RemoteAddr().String()+", чат:",lmess.chat+". Возможная ошибка отправки файла в messageSaver():", err)
+						}
 					}
+				}else{
+					SaveMessage(lmess.chat,"{~}2"+lname,ldate,false)
 				}
+			}else{
+				SaveMessage(lmess.chat,"{~}2"+lname+"{[|4~4~4|]}"+cfe,ldate,false)
 			}
 		}else{
-			log.Println("Сообщение",lmess.mess)
 			_, err := db.Exec("INSERT INTO `c"+lmess.chat+"` (`mess`, `date`) VALUES ('" + lmess.mess + "','" + lmess.date + "')")
 			if err != nil {
 				log.Println(err)
@@ -270,7 +307,7 @@ func messageSaver(){
 				for i := 0; i<len(users[lmess.chat]);i++{
 					err = users[lmess.chat][i].c.WriteMessage(1, []byte(lmess.mess+lmess.date))
 					if err != nil {
-						log.Println("Клиент:",users[lmess.chat][i].c.RemoteAddr().String()+". Возможная ошибка отправки сообщения в messageSaver():", err)
+						log.Println("Клиент:",users[lmess.chat][i].c.RemoteAddr().String()+", чат:",lmess.chat+". Возможная ошибка отправки сообщения в messageSaver():", err)
 						break
 					}
 				}
@@ -307,7 +344,7 @@ func makeNewChat() string{
     if err != nil {
         log.Panic(err)
     }
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `f" + id + "` (name TEXT, data LONGBLOB)")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS `f" + id + "` (name TEXT, data LONGBLOB, hash VARCHAR(32))")
     if err != nil {
         log.Panic(err)
     }
@@ -326,7 +363,7 @@ func checkChatExist(lid string) bool{
 }
 
 func checkMessages(lid string) ([]string){
-	res, err := db.Query("SELECT * FROM `c"+lid+"` LIMIT 50")
+	res, err := db.Query("SELECT * FROM `c"+lid+"` ORDER BY `date` DESC LIMIT 50")
     if err != nil {
         log.Panic(err)
 		return []string{"Ошибка загрузки данных чата, повторите попытку позже. Если ошибка сохраниться - обратитесь в техническую поддержку."}//,[][]byte{}
@@ -342,11 +379,14 @@ func checkMessages(lid string) ([]string){
 		time=strings.Replace(strings.Replace(strings.Replace(time, " ", "", -1), ":", "", -1), "-", "", -1)
 		masmess=append(masmess, mess+time)
 	}
+	for i, j := 0, len(masmess)-1; i < j; i, j = i+1, j-1 {
+        masmess[i], masmess[j] = masmess[j], masmess[i]
+    }
 	return masmess
 }
 
 func main(){
-	log.Println("v0.2.7 ---------===============--------- 08.12.2022 22:00")
+	log.Println("v0.2.8 ---------===============--------- 09.12.2022 14:00")
 	log.Println("Сервер запущен.")
 	
 	users = make(map[string][]user)

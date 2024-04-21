@@ -36,13 +36,13 @@ body {
 }
 
 #startButton{
-	background: rgba(0, 0, 0, 0.1);
+	background: #00000054;
     min-height: 25px;
     border-radius: 3px;
     top: 26%;
     left: 6%;
     font-size: 0.9em;
-    color: rgba(0, 0, 0, 0.5);
+    color: #ffffffde;
     font-weight: 500;
     transform-origin: 0 0;
     transform: translate3d(0, 0, 0);
@@ -81,7 +81,7 @@ body {
 	top: 26%;
 	left: 6%;
 	font-size: 0.9em;
-	color: rgba(0, 0, 0, 0.5);
+	color: #ffffffde;
 	font-weight: 500;
 	transform-origin: 0 0;
 	transform: translate3d(0, 0, 0);
@@ -95,7 +95,7 @@ body {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	background: rgba(0, 0, 0, 0.05);
+	background: #3b441a;
 	z-index: -1;
 	transform: scaleX(0);
 	transform-origin: left;
@@ -110,14 +110,14 @@ body {
 	padding: 6% 6% 0 6%;
 	font-size: 1.05em;
 	font-weight: 400;
-	background: rgba(0, 0, 0, 0.1);
+	background: #00000054;
 	box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.3);
 	color: #fff;
 	transition: all 0.15s ease;
 	font-family: 'Mulish';
 }
 .inp input:hover {
-	background: rgba(0, 0, 0, 0.15);
+	background: #3b441a;
 	box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.5);
 }
 .inp input:not(:-moz-placeholder-shown) + .label {
