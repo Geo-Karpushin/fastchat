@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -48,10 +49,14 @@ type Message struct {
 	Time string `json:"time"`
 }
 
+type Question struct {
+	Question string `json:"question"`
+}
+
 //=================CONFIG=================\\
 
-const version string = "v0.4.2"
-const updateDay string = "20.07.2023"
+const version string = "v0.4.4"
+const updateDay string = "31.12.2023"
 const maxIDlen int = 11
 const minIDlen int = 4
 const generateIDlen = 5
@@ -59,13 +64,13 @@ const HTTPSport string = "443"
 const HTTPport string = "80"
 const maxSizeInBytes = 10485760
 const timeLayout = "2006-01-02T15:04:05.999-0700"
-const runesForIDLen = 36
 
 var db DBConnection
 var ctx context.Context
 var users Users
 var IsLetter = regexp.MustCompile(`^[a-z0-9]+$`).MatchString
 var runesForID = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
+var questionFile *os.File
 
 /*
 Запросы от клиента:
@@ -91,12 +96,12 @@ var runesForID = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
 //=================CODE===================\\
 
 func main() {
-	// f, err := os.OpenFile("logs", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	// if err != nil {
-	// 	log.Fatalf("Ошибка логов: %v", err)
-	// }
-	// defer f.Close()
-	// log.SetOutput(f)
+	f, err := os.OpenFile("logs", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("Ошибка логов: %v", err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
 	log.Println(version + "---------==== FASTCHAT ====---------" + updateDay)
 	log.Println("Запуск сервера...")
 	defer log.Println("Завершение работы...")
@@ -137,17 +142,26 @@ func main() {
 		}
 	})
 	http.HandleFunc("/speaker", speaker)
+	http.HandleFunc("/questions", questionSaver)
 
 	log.Println("Файлы и пути зарегестрированы")
 
+	newQuestionFile, err := os.OpenFile("newquestions", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	questionFile = newQuestionFile
+
 	log.Println("Сервер запущен. Прослушиваются порты", HTTPport, HTTPSport)
-	// go func() {
-	// 	if err := http.ListenAndServe(":"+HTTPport, http.HandlerFunc(redirectToHTTPS)); err != nil {
-	// 		log.Printf("Ошибка ListenAndServe: %v", err)
-	// 	}
-	// }()
-	log.Fatal(http.ListenAndServe(":3000", nil))
-	// log.Fatal(http.ListenAndServeTLS(":"+HTTPSport, "/etc/ssl/certificate.crt", "/etc/ssl/private/private.key", nil))
+	go func() {
+		if err := http.ListenAndServe(":"+HTTPport, http.HandlerFunc(redirectToHTTPS)); err != nil {
+			log.Printf("Ошибка ListenAndServe: %v", err)
+		}
+	}()
+	// log.Fatal(http.ListenAndServe(":3003", nil))
+	log.Fatal(http.ListenAndServeTLS(":"+HTTPSport, "/etc/letsencrypt/live/fastchat.space-0003/cert.pem", "/etc/letsencrypt/live/fastchat.space-0003/privkey.pem", nil))
 }
 
 func speaker(w http.ResponseWriter, r *http.Request) {
@@ -288,7 +302,7 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 							log.Panic(err)
 						}
 						WriteMessageToAll(chatID, out)
-						err = ExecuteQuery("UPDATE chats SET password = ? WHERE id = ?", nil, chatID)
+						err = ExecuteQuery("UPDATE chats SET password = ?, readonlypass = ? WHERE id = ?", nil, nil, chatID)
 						if err != nil {
 							log.Panic(err)
 						}
@@ -363,7 +377,7 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 						endConnection()
 						log.Panic(err)
 					}
-					getFile(chatID, &cuser, mess.Text, sendtime)
+					getFile(chatID, &cuser, mess.Text, sendtime, mess.Tag)
 				}
 				mess = Message{}
 				continue
@@ -402,6 +416,23 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 	}
 	endConnection()
 	return
+}
+
+func questionSaver(w http.ResponseWriter, r *http.Request) {
+	var question Question
+	buf, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Panic(err)
+	}
+	err = json.Unmarshal(buf, &question)
+	if err != nil {
+		log.Panic(err)
+	}
+	log.Println("Клиент:", r.RemoteAddr+", задан новый вопрос:", question.Question)
+	_, err = questionFile.WriteString(question.Question + "\n")
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func getHash(in []byte) string {
@@ -460,7 +491,7 @@ func newPassword(chatID string, newPasswordstr string, readOnlyPass bool) {
 
 func checkChat(chatID string) (exist bool, pass string, rop bool, theme int) {
 	db.mux.Lock()
-	err := db.session.Query("SELECT password, readonlypass, theme FROM chats WHERE id=?", chatID).WithContext(ctx).Consistency(gocql.One).Scan(&pass, &rop, &theme)
+	err := db.session.Query("SELECT password, readonlypass, theme FROM chats WHERE id=?", chatID).Consistency(gocql.One).Scan(&pass, &rop, &theme)
 	db.mux.Unlock()
 	if err != nil {
 		return false, "", false, 0
@@ -470,7 +501,7 @@ func checkChat(chatID string) (exist bool, pass string, rop bool, theme int) {
 
 func checkMessages(chatID string, oldesttime time.Time) []Message {
 	db.mux.Lock()
-	res := db.session.Query("SELECT type, mess, tag, date FROM messes WHERE chatid = ? AND date < ? LIMIT 50;", chatID, oldesttime).WithContext(ctx).Iter().Scanner()
+	res := db.session.Query("SELECT type, mess, tag, date FROM messes WHERE chatid = ? AND date < ? LIMIT 50;", chatID, oldesttime).Iter().Scanner()
 	db.mux.Unlock()
 	var masmess []Message
 	for res.Next() {
@@ -520,9 +551,9 @@ func save(chatID string, mess Message, seconddata []byte) {
 	WriteMessageToAll(chatID, byteMess)
 }
 
-func getFile(chatID string, cuser *user, name string, sendtime time.Time) {
+func getFile(chatID string, cuser *user, name string, sendtime time.Time, tag string) {
 	db.mux.Lock()
-	res := db.session.Query("SELECT seconddata FROM messes WHERE chatid = ? AND type = ? AND mess = ? AND date = ? LIMIT 50 ALLOW FILTERING;", chatID, true, name, sendtime).WithContext(ctx).Iter().Scanner()
+	res := db.session.Query("SELECT seconddata FROM messes WHERE chatid = ? AND type = ? AND mess = ? AND date = ? LIMIT 50 ALLOW FILTERING;", chatID, true, name, sendtime).Iter().Scanner()
 	db.mux.Unlock()
 	if res.Next() {
 		var seconddata []byte
@@ -544,7 +575,7 @@ func getFile(chatID string, cuser *user, name string, sendtime time.Time) {
 			cuser.mux.Unlock()
 		}
 		cuser.mux.Lock()
-		out, err := json.Marshal(Message{6, name, "", time.Now().Format(timeLayout)})
+		out, err := json.Marshal(Message{6, name, tag, time.Now().Format(timeLayout)})
 		if err != nil {
 			cuser.mux.Unlock()
 			log.Panic(err)

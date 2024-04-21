@@ -13,12 +13,17 @@
 <url>
   <loc>https://fastchat.space:443/chat/</loc>
   <lastmod>2023-06-03T02:12:28+00:00</lastmod>
-  <priority>1.00</priority>
+  <priority>0.90</priority>
+</url>
+<url>
+  <loc>https://fastchat.space:443/help/</loc>
+  <lastmod>2023-06-03T02:12:28+00:00</lastmod>
+  <priority>0.90</priority>
 </url>
 <url>
   <loc>https://fastchat.space:443/res/user-agreement.docx</loc>
   <lastmod>2023-06-01T08:44:29+00:00</lastmod>
-  <priority>0.80</priority>
+  <priority>0.60</priority>
 </url>
 
 

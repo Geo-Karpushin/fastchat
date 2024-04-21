@@ -10,17 +10,17 @@
 		<meta name="author" content="Карпушин Георгий"/>
 		<meta name="copyright" content="Все права принадлежат Карпушину Георгию"/>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-		<meta property="og:title" content="Fast Chat">
-		<meta property="og:description" content="Fast Chat - бесплатный сервис для быстрой, безопасной и удобной передачи текстовых сообщений, ссылок и файлов между устройствами без регистрации и ограничений. Отправляйте данные мгновенно и анонимно!">
+		<meta property="og:title" content="Fast Chat - Создание чата">
+		<meta property="og:description" content="Создайте свой чат здесь! Передавайте тексты, ссылки и файлы быстро, безопасно и без регистрации! Удобный и функциональный сервис Fast Chat.">
 		<meta property="og:url" content="https://fastchat.space">
 		<meta property="og:image" content="https://fastchat.space/res/favicon.png">
 		<meta property="og:type" content="website">
 		<meta property="og:site_name" content="Fast Chat">
 		<meta property="og:locale" content="ru_RU">
-		<meta name="viewport" content="minimum-width=400px, initial-scale=1.0">
-		<meta name="viewport" content="minimum-height=800px, initial-scale=1.0">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta http-equiv="expires" content="0">
-		<link rel="icon" href="../res/favicon.png?v=0.4.2" type="image/png">
+		<link rel="icon" href="../../res/favicon.png?v=0.4.4" type="image/png">
+		<link rel="stylesheet" href="res/style.css?v=0.4.4">
 		<!-- Yandex.Metrika counter -->
 		<script type="text/javascript" >
 		   (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
@@ -37,42 +37,22 @@
 		</script>
 		<noscript><div><img src="https://mc.yandex.ru/watch/92676524" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 		<!-- /Yandex.Metrika counter -->
-		<link rel="stylesheet" href="res/style.css?v=0.4.2">
 		<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
 		<script src="../res/anime.min.js"></script>
-		<script src="./res/onLoad.js?v=0.4.2" defer></script>
-		<script src="./res/messages.js?v=0.4.2.1" defer></script>
+		<script src="./res/onLoad.js?v=0.4.4" defer></script>
+		<script src="./res/messages.js?v=0.4.4" defer></script>
 	</head>
 	<body id="body">
 		<header id="header">
-			<div id="h1">
-				<h1 id="name"><a href="../">Fast Chat</a></h1>
+			<div class="headers" id="header-left">
+				<h1 id ="name" title="Переход на главную страницу" onclick="window.location.href = '../';">Fast Chat</h1>
 			</div>
-			<div id="h2">
+			<div class="headers" id="header-right">
 				<h2 id="id-name" title="Нажмите, чтобы скопировать ссылку" onclick="copyToClipboard(document.location.href);">Создание чата...</h2>
+				<label class="icon-button" id="openQR"><img class="icon" title="Показать QR-код" src="./res/imgs/qr-icon.svg" id="icon-openQR"></label>
 			</div>
 		</header>
 		<section id="mainpage">
-			<footer id="footer">
-				<div id="footer-line">
-					<div id = "footer-text">
-						<div class="row">
-							<ul>
-								<li><a href="https://t.me/fastchatspace">Телеграм канал</a></li>
-								<li><a href="mailto:info.fastchat@gmail.com">Администрация</a></li>
-								<li><a href="mailto:geokarpushin@gmail.com">Владелец</a></li>
-								<li><a href="../res/user-agreement.docx" download="Пользовательское Соглашение.docx">Пользовательские Соглашение</a></li>
-								<li><a href="https://yoomoney.ru/fundraise/pdD2bAIffzE.230505">Поддержать проект</a></li>
-							</ul>
-						</div>
-
-						<div class="row">
-							<a href="../">Fast Chat 2022-2023</a>
-						</div>
-					</div>
-					<div id="qr"></div>
-				</div>
-			</footer>
 			<main id="main">
 				<section id="messages-content">
 					<div id="messages">
@@ -82,19 +62,19 @@
 				</section>
 				<section id="in">
 					<div id="in1">
-						<button class="icon-button" id = "send" onclick="send();"><img class="icon" src="./res/imgs/send.svg"></button>
-						<label class="icon-button" id = "openFiles" for="inFiles"><img class="icon" src="./res/imgs/addFiles.svg"></label>
+						<button class="icon-button" id = "send" onclick="send();"><img class="icon" title="Отправить сообщение" src="./res/imgs/send.svg"></button>
+						<label class="icon-button" id = "openFiles" for="inFiles"><img class="icon" title="Открыть файлы" src="./res/imgs/addFiles.svg"></label>
 						<input id="inFiles" type="file" multiple>
 						<div id="inText">
-							<div id="text" contenteditable></div>
+							<div id="text" title="Поле ввода" contenteditable></div>
 							<div id="files"></div>
 						</div>
 						<div id="settings-container">
-							<button class="icon-button" id = "settings"><img class="icon" src="./res/imgs/settings.svg" style="pointer-events: none;"></button>
+							<button class="icon-button" id = "settings" title="Настройки"><img class="icon" title="Настройки" src="./res/imgs/settings.svg" style="pointer-events: none;"></button>
 						</div>
 					</div>
 					<div id="in2">
-						<button class="icon-button" id="enterPasswordForPrint" onclick="showPasswordForm()" style="width: 100%;">
+						<button class="icon-button" id="enterPasswordForPrint" onclick="showPasswordForm()">
 							Для отправки новых сообщений введите пароль
 						</button>
 					</div>
@@ -109,19 +89,30 @@
 			</div>
 		</section>
 		<section class="menu-cover" id="password-menu">
-			<div class="close-menu" id="close-password-menu-div">
-				<label id="close-password-menu-div" class="close-icon-button"><img id="close-menu" class="icon" src="./res/imgs/close.svg"></label>
-			</div>
 			<div class="menu">
+				<div class="close-menu" id="close-password-menu-div">
+					<label id="close-password-menu-div" class="close-icon-button"><img id="close-menu" class="icon" title="Закрыть меню" src="./res/imgs/close.svg"></label>
+				</div>
 				<p>Для доступа к чату введите пароль и нажмите на кнопку "Открыть":</p>
-				<div id="password" contenteditable=""></div>
-				<button id="check-password" onclick="checkPassword();">Открыть</button>
+				<div class = "labelCover">
+					<label for="inp" class="inp">
+						<input type="text" id="password" placeholder="&nbsp;">
+						<span class="label" id="check-password-Text"></span>
+						<span class="focus-bg"></span>
+					</label>
+				</div>
+				<button class="menu-button" id="check-password" onclick="checkPassword();">Открыть</button>
+			</div>
+		</section>
+		<section class="menu-cover" id="QR-container">
+			<div class="menu">
+				<div class="close-menu" id="close-QR-div">
+					<label id="close-QR-button" class="close-icon-button"><img id="close-QR" class="icon" title="Закрыть меню" src="./res/imgs/close.svg"></label>
+				</div>
+				<div id="qr"></div>
 			</div>
 		</section>
 		<section class="menu-cover" id="menu-cover">
-			<div class="close-menu" id="close-menu-div">
-				<label id="close-icon-button" class="close-icon-button"><img id="close-menu" class="icon" src="./res/imgs/close.svg"></label>
-			</div>
 			<!--
 			<div class="menu">
 				<div class="settings-contentable" id="search-tag" contenteditable=""></div>
@@ -131,11 +122,26 @@
 			</div>
 			-->
 			<div class="menu">
-				<div class="settings-contentable" id="set-password" contenteditable=""></div>
+				<div class="close-menu" id="close-menu-div">
+					<label id="close-icon-button" class="close-icon-button"><img id="close-menu" class="icon" title="Закрыть меню" src="./res/imgs/close.svg"></label>
+				</div>
+				<div class = "labelCover">
+					<label for="inp" class="inp">
+						<input type="text" id="set-password" placeholder="&nbsp;">
+						<span class="label" id="password-Text"></span>
+						<span class="focus-bg"></span>
+					</label>
+				</div>
 				<input type="checkbox" id="useForRead" checked="true">
 				<label id="labelUseForRead" for="useForRead">Использовать для чтения чата</label>
-				<div class="settings-contentable" id="set-tag" contenteditable=""></div>
-				<button class="menu-button" id="change-theme" data-theme="0" onclick="setTheme(Number(this.dataset.theme)+1);">
+				<div class = "labelCover">
+					<label for="inp" class="inp">
+						<input type="text" id="set-tag" placeholder="&nbsp;">
+						<span class="label" id="tag-Text"></span>
+						<span class="focus-bg"></span>
+					</label>
+				</div>
+				<button class="menu-button" id="change-theme" data-theme="0" onclick="changeThemeFunction();">
 					Сменить тему
 				</button>
 				<button class="menu-button" id="apply-settings" onclick="applySettings();">

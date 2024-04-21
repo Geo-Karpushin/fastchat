@@ -10,15 +10,16 @@
 		<meta name="author" content="Карпушин Георгий"/>
 		<meta name="copyright" content="Все права принадлежат Карпушину Георгию"/>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-		<meta property="og:title" content="Fast Chat">
-		<meta property="og:description" content="Fast Chat - бесплатный сервис для быстрой, безопасной и удобной передачи текстовых сообщений, ссылок и файлов между устройствами без регистрации и ограничений. Отправляйте данные мгновенно и анонимно!">
+		<meta property="og:title" content="Fast Chat - Главная страница">
+		<meta property="og:description" content="Бесплатный сервис без регистрации для быстрой, безопасной и удобной передачи текстов, ссылок и файлов между устройствами без регистрации бесплатно. Отправляйте данные мгновенно и анонимно с Fast Chat!">
 		<meta property="og:url" content="https://fastchat.space">
 		<meta property="og:image" content="https://fastchat.space/res/favicon.png">
 		<meta property="og:type" content="website">
 		<meta property="og:site_name" content="Fast Chat">
 		<meta property="og:locale" content="ru_RU">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<link rel="icon" href="./res/favicon.png" type="image/png"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<link rel="icon" href="./res/favicon.png?v=0.4.4" type="image/png"/>
+		<link rel="stylesheet" href="res/style.css?v=0.4.4"/>
 		<!-- Yandex.Metrika counter -->
 		<script type="text/javascript" >
 		   (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
@@ -33,13 +34,11 @@
 				accurateTrackBounce:true
 		   });
 		</script>
-		<link rel="stylesheet" href="res/style.css"/>
-		<link rel="stylesheet" href=" https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
 		<noscript><div><img src="https://mc.yandex.ru/watch/92676524" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 		<!-- /Yandex.Metrika counter -->
 		<script src="res/anime.min.js"></script>
-		<script src="res/spawn-background.js" async></script>
-		<script src="res/script.js" defer></script>
+		<script src="res/spawn-background.js?v=0.4.4" async></script>
+		<script src="res/script.js?v=0.4.4" defer></script>
 	</head>
 	<body name="body">
 		<header id="header">
@@ -49,28 +48,74 @@
 			<section id="getId">
 				<label for="inp" class="inp">
 					<input type="text" id="inpT" placeholder="&nbsp;" oninput="updateBTN(event);">
-					<span class="label">ID чата (Необязательно)</span>
+					<span id="label"></span>
 					<span class="focus-bg"></span>
 				</label>
 			</section>
 			<section id = "startChat">
-				<button id = "startButton" onclick="startChat();">Создать Чат!</button>
+				<button class = "mainButtons" id = "startButton" onclick="startChat();">Создать Чат!</button>
+			</section>
+			<section id = "bottomButtons">
+				<button href="#about" id="toDescription" class="mainButtons" onclick="goDown();">⇃ О САЙТЕ ⇂</button>
+				<button id="switchTheme" class="mainButtons" onclick="switchTheme();"><img src="./res/dark.svg" title="Сменить тему"></button>
 			</section>
 		</main>
+		<section id="description">
+			<h2>О сайте</h2>
+			<h3>Fast Chat — бесплатный сайт, который позволяет пользователям передавать информацию между устройствами быстро, безопасно и без регистрации.</h3>
+			<ul>
+				<li><details><summary><h4>Создание чата</h4></summary><p>Создайте чат с уникальным идентификатором в один клик, нажав на кнопку «Создать Чат» или придумайте свой собственный идентификатор, состоящий из символов латинского алфавита и цифр, который будет иметь длину от 5 до 10 символов включительно, впишите его в поле «ID чата» и нажмите на кнопку «Перейти в Чат». Все чаты хранятся не более 8 дней с момента отправки последнего сообщения.</p></details></li>
+				<li><details><summary><h4>Поддерживаемые типы данных</h4></summary><p>В чат можно отправлять текстовые сообщения, файлы размером до 10МБ и ссылки.</p></details></li>
+				<li><details><summary><h4>Подключение к чату</h4></summary><p>Зайти в существующий чат можно по идентификатору чата, который отображается справа вверху на странице чата, введя его в поле «ID чата» и нажав на кнопку «Перейти в Чат», по ссылке из адресной строки (её также можно копировать, нажав на идентификатор чата) или по QR коду слева внизу страницы.</p></details></li>
+			</ul>
+			<h2>Ответы на вопросы</h2>
+			<h3>Мы стремимся сделать наш сервис максимально удобным и понятным, поэтому мы с радостью ответим вам на вопросы о работе с сайтом.</h3>
+			<ul>
+				<li><details><summary><h4>Чат бот</h4></summary><p>У нас есть специальный <a href="./help">чат-бот</a>, который ответит вам на интересующие вас вопросы!</p></details></li>
+				<li><details><summary><h4>Ответы от админитсрации</h4></summary><p>Вы можете обратиться к администрации или владельцу проекта по нижеперечисленным контактам и вам обязательно ответят в течении рабочего дня!</p></details></li>
+			</ul>
+			<h2>О функционале Fast Chat</h2>
+			<h3>Сегодня наш сайт является одним из самых функциональных сервисов на рынке. Fast Chat стремится быть полезным и понятным для каждого пользователя, поэтому помимо основных функций, мы предоставляем ряд уникальных возможностей нашим пользователям.</h3>
+			<ul>
+				<li><details><summary><h4>Режимы работы пароля</h4></summary><p>По умолчанию пароль полностью блокирует доступ к чату для неавторизованных пользователей, но вы также можете изменить режим работы пароля. Если вы отключите параметр «Использовать для чтения чата», неавторизованным пользователям будет доступно чтение чата, скачивание файлов и переход по ссылкам, но они не смогут сменить пароль, тему чата, отправить сообщение.</p></li>
+				<li><details><summary><h4>Тема чатов</h4></summary><p>Сервис позволяет изменить цветовую тему чата по-умолчанию на тёмную. Для этого перейдите в настройки чата и нажмите «Сменить тему», а затем «Применить». В будущем будет возможность создать свою уникальную тему для чата.</p></li>
+				<li><details><summary><h4>Тэги</h4></summary><p>Для организации данных в чате вы можете использовать тэги. Чтобы помечать отправляемые сообщения тэгами в настройках чата введите желаемый тэг в соответствующее поле и нажмите «Применить».</p></li>
+				<li><details><summary><h4>Предложить свою идею</h4></summary><p>Каждый пользователь Fast Chat может предложить идею функционала для будущих обновлений администрации или владельцу проекта. Контакты указаны в конце страницы.</p></li>
+			</ul>
+			<h2>Обеспечение безопасности данных</h2>
+			<h3>Fast Chat стремиться к обеспечению наилучшей безопасности для клиентов.</h3>
+			<ul>
+				<li><p>60,5 миллионов комбинаций стандартных идентификаторов + возможность создания собственных идентификаторов</p></li>
+				<li><p>Существование чата не более 8 дней с момента отправки последнего сообщения</p></li>
+				<li><p>Возможность ставить на чат сложные, многострочные пароли, содержашие смайлики и спецсимволы​</p></li>
+				<li><p>SSL сертификат (обеспечивает защищённый канал связи между сервером и клиентами)</p></li>
+			</ul>
+			<h2>Обеспечение быстродействия</h2>
+			<h3>В Fast Chat воплащены функции, которые позволяют передавать информацию быстрее, чем в других сервисах.</h3>
+			<ul>
+				<li><p>Использование современных технологий обмена информацией в сочетании с быстрым и оптимизированным ПО на сервере</p></li>
+				<li><p>Возможность создать чат, отправить текст, ссылки, файлы в один клик​</p></li>
+				<li><p>Не нужно вводить дополнительные сведения для использования сервиса</p></li>
+				<li><p>Удобство и вариативность возможностей подключения к чату</p></li>
+			</ul>
+		</section>
 		<footer id="footer">
 			<div class="row">
 				<ul>
-					<li><a href="https://t.me/fastchatspace">Телеграм канал</a></li>
-					<li><a href="mailto:info.fastchat@gmail.com">Администрация</a></li>
-					<li><a href="mailto:geokarpushin@gmail.com">Владелец</a></li>
-					<li><a href="res/user-agreement.docx" download="Пользовательское Соглашение.docx">Пользовательские Соглашение</a></li>
-					<li><a href="https://yoomoney.ru/fundraise/pdD2bAIffzE.230505">Поддержать проект</a></li>
+					<li><a href="https://vk.com/fastchatspace" title = "Сообщество ВКонтакте">VK</a></li>
+					<li><a href="https://t.me/fastchatspace" title = "Телеграм канал">Telegram</a></li>
+					<li><a href="mailto:info.fastchat@gmail.com" title = "Почта Администрации">Администрация</a></li>
+					<li><a href="mailto:geokarpushin@gmail.com" title = "Почта Владельца">Владелец</a></li>
+					<li><a href="../res/user-agreement.docx" download="Пользовательское Соглашение.docx" title = "Пользовательское Соглашение">Пользовательские Соглашение</a></li>
+					<li><a href="https://yoomoney.ru/fundraise/pdD2bAIffzE.230505" title = "Финансовая помощь проекту :)">Поддержать проект</a></li>
 				</ul>
 			</div>
 
-			<div class="row">
-				Fast Chat 2022-2023
+			<div title="Copyright" class="row">
+				Fast Chat 2022-2024
 			</div>
 		</footer>
+		<section id="animated-messages">
+		</section>
 	</body>
 </html>

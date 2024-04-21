@@ -2,6 +2,7 @@
 
 const reader = new FileReader();
 const urlregex = /((([a-zA-Z0-9]+:){1})([a-zA-Z0-9\-\_\~\(\)\*\%\!\#\$\&\'\+\/\,\:\;\=\?\@\[\]]+(\.[a-zA-Z0-9\-\_\~\(\)\*\%\!\#\$\&\'\+\/\,\:\;\=\?\@\[\]]+)+)([\?#]{1}[a-zA-Z0-9\-\.\_\~\(\)\*\%\!\#\$\&\'\+\/\,\:\;\=\?\@\[\]]*)?)/g;
+const imgFormat = /\.(jpeg|jpg|jfif|jpe|dib|rle|gif|png|apng|bmp|ico)$/i;
 
 let socket;
 
@@ -9,7 +10,9 @@ if (window.location.protocol == 'https:'){
 	socket = new WebSocket("wss://" + document.location.host + "/speaker");
 } else {
 	socket = new WebSocket("ws://" + document.location.host + "/speaker");
-	addMessage({code: 1, text: "ВЫ ИСПОЛЬЗУЕТЕ НЕЗАЩИЩЁННУЮ ВЕРСИЮ FAST CHAT!\nПереходите на защищённую: https://fastchat.space/chat/", tag: "", time: goodDate(new Date())});
+	window.onload = function(){
+		addMessage({code: 1, text: "ВЫ ИСПОЛЬЗУЕТЕ НЕЗАЩИЩЁННУЮ ВЕРСИЮ FAST CHAT!\nПереходите на защищённую: https://fastchat.space/chat/", tag: "WARNING", time: goodDate(new Date())})
+	};
 }
 
 let qrelement = document.getElementById('qr');
@@ -33,60 +36,16 @@ let cpmd = document.getElementById("close-password-menu-div");
 let passwordMenu = document.getElementById("password-menu");
 let changeTheme = document.getElementById("change-theme");
 let passwordEntered = false;
-let awaitingFileName = "";
+let awaitingFileName = undefined;
+let nextPic = undefined;
 let lastKnownPassword = "";
 let lastKnownUFR = true;
 let lastKnownTag = "";
 let useForRead = true;
 let lastKnownTheme = '0';
-
-let themesVars = [
-	'--dark-color',
-	'--main-color',
-	'--pre-bg',
-	'--text',
-	'--text-hover',
-	'--url-color',
-	'--very-dark',
-	'--menu-color',
-	'--bg-1',
-	'--bg-2',
-	'--bg-3',
-	'--bg-4',
-	'--close-color'
-]
-let themes = [
-	[
-		'19, 26, 6',
-		'51, 62, 11',
-		'95, 105, 85',
-		'210, 210, 210',
-		'255, 255, 255',
-		'135, 206, 250',
-		'0, 0, 0',
-		'177, 199, 85',
-		'#1F6521',
-		'#53900F',
-		'#A4A71E',
-		'#D6CE15',
-		'#ff0000a3'
-	],
-	[ 
-		'219, 226, 206',
-		'81, 92, 41',
-		'95, 105, 85',
-		'205, 205, 205',
-		'255, 255, 255',
-		'135, 206, 250',
-		'100, 100, 100',
-		'26, 46, 27',
-		'#103811',
-		'#243d07',
-		'#38390b',
-		'#3f3d04',
-		'#ff0000a3'
-	]
-];
+let needToScroll = true;
+let lastMessage;
+let themeSet = false;
 
 //================== CODE ==================\\
 
@@ -119,7 +78,7 @@ function resetID(){
 			mainpage.style.display = "flex";
 			passwordMenu.style.display = "none";
 			errorpage.style.display = "none";
-			idName.innerText = "ID: " + id;
+			idName.innerText = "ID: " + id.toUpperCase();
 			makeQR();
 		}
 	} else {
@@ -148,7 +107,7 @@ socket.onerror = (error) => {
 idName.innerHTML = "404";
 
 // Новое сообщение по WebSocket
-socket.onmessage = (msg) => {
+socket.addEventListener("message", (msg) => {
 	console.log("Сообщение от сервера")
 	if (typeof(msg.data) == "string"){
 		mess = JSON.parse(msg.data);
@@ -175,6 +134,22 @@ socket.onmessage = (msg) => {
 						changeInContent(2);
 					}
 				}
+				if (!themeSet) {
+					console.log(true);
+					switch (localStorage.getItem("theme")) {
+						case "light":
+							localStorage.setItem("theme", "light");
+							lastKnownTheme = 0;
+							setLightTheme();
+							break;
+						case "dark":
+							localStorage.setItem("theme", "dark");
+							lastKnownTheme = 1;
+							setDarkTheme();
+							break;
+					}
+					socket.send(JSON.stringify({ code: 7, text: lastKnownTheme.toString(), tag: "", time: goodDate(new Date()) }));
+				}
 				break;
 			case 5:
 				passwordEntered = false;
@@ -188,45 +163,60 @@ socket.onmessage = (msg) => {
 				}
 				break;
 			case 6:
-				awaitingFileName = mess.text;
+				if (mess.tag == ""){
+					awaitingFileName = mess.text;
+				} else {
+					nextPic = mess.text;
+				}
 				break;
 			case 7:
+				themeSet = true;
 				lastKnownTheme = mess.text;
-				setTheme(mess.text);
+				if (mess.text == "0") {
+					lastKnownTheme = 0;
+					setLightTheme();
+				} else {
+					lastKnownTheme = 1;
+					setDarkTheme();
+				}
 				break;
 		}
 	} else {
-		console.log("Пришёл файл");
-		let file = new File([msg.data], awaitingFileName);
-		let url = URL.createObjectURL(file);
-		const aTag = document.createElement("a");
-		aTag.href = url;
-		aTag.download = awaitingFileName;
-		document.body.appendChild(aTag);
-		aTag.click();
-		URL.revokeObjectURL(url);
-		aTag.remove();
-		awaitingFileName = '';
+		if (awaitingFileName != undefined) {
+			console.log("Пришёл файл");
+			let file = new File([msg.data], awaitingFileName);
+			let url = URL.createObjectURL(file);
+			const aTag = document.createElement("a");
+			aTag.href = url;
+			aTag.download = awaitingFileName;
+			document.body.appendChild(aTag);
+			aTag.click();
+			URL.revokeObjectURL(url);
+			aTag.remove();
+			awaitingFileName = undefined;
+		}
 	}
-}
+});
 
 // QR код
 function makeQR(){
+	console.log(document.URL)
 	qrelement.innerHTML = "";
 	const qrcode = new QRCode(qrelement, {
 		text: document.URL,
-		width: 128,
-		height: 128,
-		colorDark: '#333e0b',
-		colorLight: '#d3d3d3',
-		correctLevel: QRCode.CorrectLevel.H
+		width: 1024,
+		height: 1024,
+		colorDark: '#000',
+		colorLight: '#fff',
+		correctLevel: QRCode.CorrectLevel.M
 	});
 }
 
 // Добавление нового сообщения
-function addMessage(inpMess) {
+async function addMessage(inpMess) {
 	let curDate = new Date(inpMess.time);
 	let stringTime = curDate.toLocaleString();
+	let localNeedToScroll = true;
 	let finalText = "";
 	if (inpMess.code == 1) {
 		let strings = inpMess.text.split("\n");
@@ -240,20 +230,51 @@ function addMessage(inpMess) {
 		finalText = all.innerHTML;
 	} else if (inpMess.code == 2) {
 		let a = document.createElement("a");
-		a.setAttribute("id", "file-url");
-		a.setAttribute("onclick", "socket.send(JSON.stringify({ code: 6, text: '" + inpMess.text + "', tag: '" + inpMess.tag + "', time: '" + inpMess.time + "' }));");
+		a.setAttribute("class", "file-url");
+		a.setAttribute("onclick", `socket.send(JSON.stringify({ code: 6, text: "${inpMess.text}", tag: "", time: "${inpMess.time}" }));`);
 		a.innerText = inpMess.text;
+		if (imgFormat.test(inpMess.text)){
+			localNeedToScroll = false;
+			await new Promise(resolve => {
+				const messageHandler = (waitingMess) => {
+					if (typeof(waitingMess.data) != "string" && awaitingFileName == undefined && nextPic == inpMess.text) {
+						nextPic = undefined;
+						let picture = new File([waitingMess.data], inpMess.text);
+						let picurl = URL.createObjectURL(picture);
+						let picContainer = document.createElement("div");
+						picContainer.setAttribute("class", "message-img-container");
+						let picElem = document.createElement("img");
+						picElem.decoding = "async";
+						picElem.setAttribute("class", "message-img");
+						picElem.src = picurl;
+						picContainer.appendChild(picElem);
+						socket.removeEventListener("message", messageHandler);
+						resolve(picContainer.outerHTML);
+					}
+				};
+				socket.addEventListener("message", messageHandler);
+				socket.send(JSON.stringify({ code: 6, text: inpMess.text, tag: "place", time: inpMess.time }));
+			}).then(result => {
+				a.innerHTML = result + a.innerHTML;
+			});			  
+		}
+		let allMessages = messages.children;
+		for (let i = allMessages.length - 1; i >= 0; i--){
+			if (allMessages[i].dataset.gd === inpMess.time && "Файл " + inpMess.text + " отправляется, не закрывайте страницу, пока не появится сообщение с его именем" === allMessages[i].getElementsByClassName("message-text")[0].innerText){
+				allMessages[i].remove()
+				break;
+			}
+		}
 		finalText = a.outerHTML;
 	}
 	let finaldiv = document.createElement("div");
 	finaldiv.className = "message";
 	finaldiv.dataset.gd = inpMess.time;
 	finaldiv.innerHTML = '<div class="message-text">' + finalText + '</div><div class="message-bottom"><div class="message-tag">' + inpMess.tag + '</div><div class="message-time">' + stringTime + '</div></div>';
-	let allMessages = messages.getElementsByClassName("message");
+	let allMessages = messages.children;
 	if (allMessages.length > 0) {
 		for (let i = 0; i < allMessages.length; i++){
 			if (new Date(allMessages[i].dataset.gd) > curDate){
-				//allMessages[i].before(finaldiv);
 				messages.insertBefore(finaldiv, allMessages[i]);
 				return;
 			}
@@ -262,9 +283,14 @@ function addMessage(inpMess) {
 	} else {
 		messages.append(finaldiv);
 	}
-	setTimeout(() => {
-		messages.childNodes[messages.childElementCount].scrollIntoView(false);
-	}, 50);
+	if (needToScroll && localNeedToScroll && (lastMessage==undefined || curDate-lastMessage>=500)){
+		setTimeout(() => {
+			messages.children[messages.childElementCount-1].scrollIntoView(true);
+		}, 50);
+	}
+	if (lastMessage == undefined || lastMessage < curDate){
+		lastMessage = curDate;
+	}
 }
 
 // Показать форму ввода пароля
@@ -290,9 +316,9 @@ function changeInContent(type){
 // Проверка пароля
 function checkPassword() {
 	passwordEntered = true;
-	let pass = password.innerText;
+	let pass = password.value;
 	lastKnownPassword = pass;
-	setPassword.innerText = pass;
+	setPassword.value = pass;
 	let now = goodDate(new Date());
 	getHash(pass).then(
 		result => {return getHash(now+result);}
@@ -307,7 +333,7 @@ function checkPassword() {
 inFiles.onchange = () => {
 	files.innerHTML = "";
 	for (let i = 0; i < inFiles.files.length; i++) {
-		files.innerHTML += '<div id="file-url" contenteditable="false" data-file = ' + inFiles.files[i] + '>' + inFiles.files[i].name + '</div>';
+		files.innerHTML += '<a contenteditable="false" data-file = ' + inFiles.files[i] + '>' + inFiles.files[i].name + '</a> ';
 	}
 }
 
@@ -379,38 +405,68 @@ function send() {
 
 // Для обновления нстроек
 function applySettings() {
-	if (lastKnownPassword != setPassword.innerText || ( setPassword.innerText != "" && lastKnownUFR != useForRead )) { // Новый пароль
-		lastKnownPassword = setPassword.innerText;
+	console.log(setPassword.value != "" && ( lastKnownPassword != setPassword.value || lastKnownUFR != useForRead))
+	if ( setPassword.value != "" && ( lastKnownPassword != setPassword.value || lastKnownUFR != useForRead )) { // Новый пароль
+		lastKnownPassword = setPassword.value;
 		lastKnownUFR = useForRead;
 		getHash(lastKnownPassword).then(
 			result => {socket.send(JSON.stringify({ code: 3, text: result, tag: useForRead.toString(), time: goodDate(new Date())}));}
 		).catch(
 			error => {console.log(error);}
 		)
+	} else if ( setPassword.value == "" && lastKnownPassword != setPassword.value ) {
+		lastKnownPassword = "";
+		lastKnownUFR = true;
+		useForReadElem.checked = true;
+		socket.send(JSON.stringify({ code: 3, text: "", tag: "", time: goodDate(new Date())}));
 	}
-	if (lastKnownTheme != changeTheme.theme) {
+	if (lastKnownTheme != changeTheme.dataset.theme) {
 		lastKnownTheme = changeTheme.dataset.theme;
 		socket.send(JSON.stringify({ code: 7, text: lastKnownTheme, tag: "", time: goodDate(new Date())}));
 	}
-	if (lastKnownTag != setTag.innerText) { // Новый тэг
-		lastKnownTag = setTag.innerText;
+	if (lastKnownTag != setTag.value) { // Новый тэг
+		lastKnownTag = setTag.value;
 	}
 }
 
 // Обёртка ссылок
 function wrapLinks(str) {
-	return str.replace(urlregex, "<a id='file-url' target='_blank' href='$1'>$1</a>");
+	return str.replace(urlregex, "<a class='file-url' target='_blank' href='$1'>$1</a>");
 }
 
 // Устанавливает тему
-function setTheme(num) {
-	if (num >= themes.length) {
-		num %= themes.length
+// function setTheme(num) {
+// 	if (num >= themes.length) {
+// 		num %= themes.length
+// 	}
+// 	changeTheme.dataset.theme = num;
+// 	for (let i = 0; i < themesVars.length; i++) {
+// 		document.documentElement.style.setProperty(themesVars[i], themes[num][i]);
+// 	}
+// }
+
+function changeThemeFunction() {
+	if (document.body.classList.contains("darkTheme")) {
+		setLightTheme()
+	} else {
+		setDarkTheme()
 	}
-	changeTheme.dataset.theme = num;
-	for (let i = 0; i < themesVars.length; i++) {
-		document.documentElement.style.setProperty(themesVars[i], themes[num][i]);
-	}
+}
+
+function setDarkTheme() {
+	document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')[0].setAttribute('href', '../../res/dark_favicon.png');
+	document.body.classList.add("darkTheme");
+	//themeControllerImg.src = "./res/light.svg";
+	changeTheme.dataset.theme = 1;
+	console.log("Установлена тёмная тема");
+}
+
+function setLightTheme() {
+	document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')[0].setAttribute('href', '../../res/favicon.png');
+	document.body.classList.remove("darkTheme");
+	//themeControllerImg.src = "./res/dark.svg";
+	changeTheme.dataset.theme = 0;
+	console.log("Установлена светлая тема");
 }
 
 // Отправка сообщения на Enter
@@ -421,13 +477,19 @@ document.addEventListener('keydown', function (e) {
 	//console.log(e.keyCode);
 });
 
-// Проверка на наличие более старых сообщений
+// Проверка позиции в messages
 messages.addEventListener("scroll", function () {
 	if (messages.childElementCount > 0 && messages.scrollTop == 0) {
 		socket.send(JSON.stringify({ code: 4, text: "", tag: "", time: messages.getElementsByClassName("message")[0].dataset.gd}));
 	}
+	if ((messages.scrollHeight - messages.clientHeight) - 10 <= messages.scrollTop) {
+        needToScroll = true;
+    } else {
+		needToScroll = false;
+	}
 });
 
+// Меняет режим использования пароля
 useForReadElem.onchange = function () {
     useForRead = useForReadElem.checked;
 };
