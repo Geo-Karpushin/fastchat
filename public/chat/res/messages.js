@@ -39,9 +39,13 @@ socket.onmessage = (msg) => {
 			console.log("code 1");
 			open("./?"+msg.data.split("{~}1")[1], "_self");
 		}else if (code=="{~}2"){
-			addMessage(2, msg.data.substring(4), "00:00", false);
+			let mess=msg.data.substring(4,msg.data.length-14)
+			let time=msg.data.substring(msg.data.length-14,msg.data.length)
+			addMessage(2, mess, time, false);
 		}else{
-			addMessage(1, msg.data, "00:00", false)
+			let mess=msg.data.substring(0,msg.data.length-14)
+			let time=msg.data.substring(msg.data.length-14,msg.data.length)
+			addMessage(1, mess, time, false)
 		}
 	}
 }
@@ -59,13 +63,18 @@ function addMessage(type, text, time, needToSave)
 	if(time=="00:00"){
 		const curDate = new Date();
 		time = curDate.toLocaleString();
+	}else{
+		time=time.substring(0,4)+'-'+time.substring(4,6)+'-'+time.substring(6,8)+'T'+time.substring(8,10)+':'+time.substring(10,12)+':'+time.substring(12,14)
+		const curDate = new Date(time);
+		time = curDate.toLocaleString();
 	}
 	if (type==1){
 		messages.innerHTML += '<div class = "message"><div class="message-text">'+text+'</div><div class="message-time">'+time+'</div></div>';
 		
 		if(needToSave)
 		{
-			socket.send(text);
+			let gd=goodDate(curDate);
+			socket.send(text+gd);
 		}
 			
 		let tempMessages = messages.childNodes;
@@ -78,6 +87,10 @@ function addMessage(type, text, time, needToSave)
 		
 		tempMessages[tempMessages.length-1].scrollIntoView(false);
 	}
+}
+
+function goodDate(date){
+	return date.getFullYear()+("0" + (date.getMonth() + 1)).slice(-2)+String(date.getDate()).padStart(2, '0')+("0" + (date.getHours())).slice(-2)+("0" + (date.getMinutes())).slice(-2)+("0" + (date.getSeconds())).slice(-2);
 }
 
 function getFile(event){
@@ -98,9 +111,11 @@ function sendFiles(){
 function helpRead() {
 	if(reader.readyState!=1 && thisFiles.length!=0)
 	{
+		const curDate = new Date();
+		let gd=goodDate(curDate)
 		console.log("File: ");
 		console.log(thisFiles[thisFiles.length-1]);
-		socket.send("{~}2"+thisFiles[thisFiles.length-1].name);
+		socket.send("{~}2"+thisFiles[thisFiles.length-1].name+gd);
 		reader.readAsArrayBuffer(thisFiles[thisFiles.length-1]);
 		thisFiles.pop();
 	}else if(reader.readyState==1){
@@ -122,7 +137,9 @@ document.addEventListener('keydown', function(e) {
 			if(inText.innerText.substring(0,3)=="{~}"){
 				addMessage(1, "Сообщение не может содержать {~}", "00:00", false)
 			}else{
-				socket.send(inText.innerText);
+				const curDate = new Date();
+				let gd=goodDate(curDate);
+				socket.send(inText.innerText+gd);
 			}
 			inText.innerText="";
 		}
