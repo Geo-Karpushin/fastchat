@@ -1,4 +1,4 @@
-const socket = new WebSocket("ws://"+document.location.host+"/speaker");
+let socket = new WebSocket("ws://"+document.location.host+"/speaker");
 const reader = new FileReader();
 let messages = document.getElementById("messages-container");
 let inText = document.getElementById("inText");
@@ -7,6 +7,7 @@ let thisFiles = [];
 //let awaitingFileName="";
 let idName = document.getElementById("id-name");
 reader.addEventListener('load', readFile);
+
 
 let id=(document.location+"").split('?')[1];
 
@@ -23,7 +24,21 @@ socket.onopen = () => {
 
 socket.onclose = (event) => {
 	console.log("Отключение: ", event);
+	addMessage(1, "Ошибка подключения, переподключение..", "00:00", false);
+	setTimeout(function() {
+		open("./?"+id, "_self");
+    }, 2500);
 }
+
+
+socket.onerror = (error) => {
+	addMessage(1, "Ошибка подключения, переподключение..", "00:00", false);
+	setTimeout(function() {
+		open("./?"+id, "_self");
+    }, 2500);
+	console.log("Ошибка: ", error);
+}
+
 
 socket.onmessage = (msg) => {
 	console.log(msg.data);
@@ -39,19 +54,15 @@ socket.onmessage = (msg) => {
 			console.log("code 1");
 			open("./?"+msg.data.split("{~}1")[1], "_self");
 		}else if (code=="{~}2"){
-			let mess=msg.data.substring(4,msg.data.length-14)
-			let time=msg.data.substring(msg.data.length-14,msg.data.length)
+			let mess=msg.data.substring(4,msg.data.length-14);
+			let time=msg.data.substring(msg.data.length-14,msg.data.length);
 			addMessage(2, mess, time, false);
 		}else{
-			let mess=msg.data.substring(0,msg.data.length-14)
-			let time=msg.data.substring(msg.data.length-14,msg.data.length)
-			addMessage(1, mess, time, false)
+			let mess=msg.data.substring(0,msg.data.length-14);
+			let time=msg.data.substring(msg.data.length-14,msg.data.length);
+			addMessage(1, mess, time, false);
 		}
 	}
-}
-
-socket.onerror = (error) => {
-	console.log("Ошибка: ", error);
 }
 
 function convertTZ(date, tzString) {

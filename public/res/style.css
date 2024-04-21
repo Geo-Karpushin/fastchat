@@ -10,6 +10,10 @@
 	font-family: 'Dorblue'; 
 	src: url(fonts/Dorblue.ttf); 
 }
+@font-face {
+	font-family: 'Mulish'; 
+	src: url(fonts/Mulish-VariableFont_wght.ttf); 
+}
 
 html, body { 
 	height: 100%;
@@ -27,6 +31,8 @@ body {
     left: 0px;
     position: relative;
     margin: 0px;
+	
+	font-family: 'Mulish'; 
 }
 
 #startButton{
@@ -43,6 +49,7 @@ body {
     transition: all 0.2s ease;
     border: 0;
     box-shadow: inset 0 -1px 0 rgb(0 0 0 / 30%);
+	font-family: 'Mulish';
 }
 
 #startButton:hover{
@@ -67,6 +74,7 @@ body {
 	max-width: 280px;
 	border-radius: 3px;
 	overflow: hidden;
+	font-family: 'Mulish';
 }
 .inp .label {
 	position: absolute;
@@ -79,6 +87,7 @@ body {
 	transform: translate3d(0, 0, 0);
 	transition: all 0.2s ease;
 	pointer-events: none;
+	font-family: 'Mulish';
 }
 .inp .focus-bg {
 	position: absolute;
@@ -105,6 +114,7 @@ body {
 	box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.3);
 	color: #fff;
 	transition: all 0.15s ease;
+	font-family: 'Mulish';
 }
 .inp input:hover {
 	background: rgba(0, 0, 0, 0.15);
@@ -156,12 +166,14 @@ body {
 #footer{
 	background:#606c4952;
 	height:40%;
+	font-family: 'Mulish';
 }
 
 #header{
 	height: 20%;
     display: flex;
     justify-content: center;
+	font-family: 'Mulish';
 }
 
 #name{

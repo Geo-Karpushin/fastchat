@@ -10,6 +10,10 @@
 	font-family: 'Dorblue'; 
 	src: url(../../res/fonts/Dorblue.ttf); 
 }
+@font-face {
+	font-family: 'Mulishs'; 
+	src: url(../../res/fonts/Mulish-VariableFont_wght.ttf); 
+}
 
 html, body { 
 	height: 100%;
@@ -27,6 +31,8 @@ body {
     left: 0px;
     position: relative;
     margin: 0px;
+	
+	font-family: 'Mulish'; 
 }
 
 #main{
@@ -40,6 +46,7 @@ body {
 #footer{
 	background:#606c4952;
 	height:40%;
+	font-family: 'Mulish'; 
 }
 
 #header{
@@ -47,6 +54,7 @@ body {
     display: flex;
     justify-content: space-between;
 	padding: 1%;
+	font-family: 'Mulish'; 
 }
 
 #name{
@@ -73,10 +81,12 @@ body {
 
 #in{
 	display: contents;
+	font-family: 'Mulish'; 
 }
 
 #inFiles{
 	margin: 0.25%;
+	font-family: 'Mulish'; 
 }
 
 @keyframes gradient {
@@ -93,6 +103,7 @@ body {
 
 #file-url{
 	color: lightskyblue;
+	font-family: 'Mulish'; 
 }
 
 #file-url:hover{
@@ -107,12 +118,14 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
+	font-family: 'Mulish'; 
 }
 
 #messages
 {
 	display: flex;
     flex-direction: column-reverse;
+	font-family: 'Mulish'; 
     overflow-y: auto;
 	height: 100%;
 }
@@ -121,6 +134,7 @@ body {
 {
 	max-height: 100%;
     min-height: 30px;
+	font-family: 'Mulish'; 
     overflow: auto;
 	padding: 1%;
 }
@@ -141,6 +155,7 @@ body {
     padding: 1px;
     color: #d2d2d2;
 	background-color: #333e0bb8;
+	font-family: 'Mulish'; 
 }
 
 #inText:after {
@@ -168,6 +183,7 @@ body {
 	width:100%;
 	text-align:left;
 	word-break: break-all;
+	font-family: 'Mulish'; 
 }
 
 .message-time
@@ -175,6 +191,7 @@ body {
 	font-size:0.5em;
 	width:100%;
 	text-align:right;
+	font-family: 'Mulish';
 }
 
 @keyframes blink {

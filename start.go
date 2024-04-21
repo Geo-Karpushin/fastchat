@@ -1,5 +1,7 @@
 package main
 
+//=================IMPORT================\\
+
 import (
 	_"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/websocket"
@@ -15,17 +17,85 @@ import (
 	"fmt"
 )
 
-//=================CONFIG=================\\
+//========================================\\
 
-var db *sql.DB
-var maxIDlen int = 5
-var port string = "3000"
+//=================TYPES==================\\
+
+type message struct{
+	chat string
+	mess string
+	date string
+	mtype bool
+}
+
+type mqueue []message
+
+type user struct{
+	c *websocket.Conn
+	i string
+}
 
 //========================================\\
 
-var upgrader = websocket.Upgrader{} // use default options
+//=================CONFIG=================\\
 
+const maxIDlen int = 5
+const port string = "3000"
+var db *sql.DB
+var upgrader = websocket.Upgrader{}
+var msAct bool
 var temp []byte
+var qm mqueue
+var users map[string][]user
+
+//========================================\\
+
+//=================CODE===================\\
+
+
+func (self *mqueue) push (in message){
+	*self = append(*self, in)
+	return
+}
+
+func (self *mqueue) pop ()(out message){
+	if len(*self)>1{
+		out = (*self)[0]
+		*self = (*self)[1:]
+	}else if len(*self)==1{
+		out = (*self)[0]
+		*self=[]message{}
+	}else{
+		out=makeMess("None", "None", "None", false)
+	}
+	return out
+}
+
+func makeMess(chat string, mess string, date string, t bool)(newm message){
+	newm.chat=chat
+	newm.mess=mess
+	newm.date=date
+	newm.mtype=t
+	return newm
+}
+
+func makeUser(с *websocket.Conn, i string)(newu user){
+	newu.c=с
+	newu.i=i
+	return newu
+}
+
+func (self *user) ADD(){
+	users[(*self).i]=append(users[(*self).i],(*self))
+}
+
+func (self user) DEL(){
+	for i := 0; i<len(users[self.i]); i++{
+		if users[self.i][i].c.RemoteAddr().String()==self.c.RemoteAddr().String(){
+			users[self.i]=append(users[self.i][:i], users[self.i][i+1:]...)
+		}
+	}
+}
 
 func speaker(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
@@ -36,11 +106,13 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 	defer c.Close()
 	chatId:=""
 	AFF:=""
+	log.Println("Клиент:",r.RemoteAddr+". Подключен.")
+	var cuser user
 	for {
 		flag:=false
 		messType, mess, err := c.ReadMessage()
 		if err != nil {
-			log.Println("Возможная ошибка (норма: 1000, 1001, 1005, 1006):", err)
+			log.Println("Клиент:",r.RemoteAddr+". Возможная ошибка (норма: 1000, 1001, 1005, 1006):", err)
 			break
 		}
 		if messType==1{
@@ -48,9 +120,6 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 			code:=string(rMess[0:4])
 			ac:=strings.Split(string(mess),code)[1]
 			time:=""
-			log.Println("Сообщение -", string(mess))
-			log.Println("Код -", code)
-			log.Println("После кода -", ac)
 			if(code=="{~}1"){
 				flag=true
 				if ac==""{
@@ -65,16 +134,17 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 						mess=[]byte("{~}1"+chatId)
 						flag=false
 					}
-					messages,_:=checkMessages(chatId)
+					messages:=checkMessages(chatId)
 					for i:=0; i<len(messages);i++{
 						err = c.WriteMessage(1, []byte(messages[i]))
 						if err != nil {
-							log.Println("Возможная ошибка отправки сообщения:", err)
+							log.Println("Клиент:",r.RemoteAddr+". Возможная ошибка отправки сообщения:", err)
 							break
 						}
 					}
+					cuser:=makeUser(c,chatId)
+					cuser.ADD()
 				}
-				log.Println("Чат -", chatId)
 			}else if(code=="{~}2"){
 				flag=true
 				if ac!=""{
@@ -82,63 +152,47 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 				}else{
 					flag=false
 					mess=[]byte("Ошибка отправки файла, имя должно быть не пустым")
-					log.Println("Ошибка отправки файла, имя должно быть не пустым")
+					log.Println("Клиент:",r.RemoteAddr+". Ошибка отправки файла, имя должно быть не пустым")
 				}
 			}else{
 				if ac!=""{
 					time=string(rMess[len(rMess)-14:])
 					ac=string(rMess[0:len(rMess)-14])
 				}
-				log.Println("Сообщение -", ac)
-				log.Println("Время -", time)
-				SaveMessage(chatId,ac,time)
+				SaveMessage(chatId,ac,time,true)
+				flag=true
 			}
 		}else{
 			flag=true
 			if(AFF!=""){
-				log.Println(AFF)
-				if string(mess)==string(temp){
-					log.Println("всё хорошо")
-				}else{
-					log.Println(string(temp))
-					log.Println(string(mess))
-				}
 				rAFF:=[]rune(AFF)
-				log.Println("Имя:",string(rAFF[0:len(rAFF)-14]))
-				log.Println("Время:",string(rAFF[len(rAFF)-14:]))
 				name:=string(rAFF[0:len(rAFF)-14])
 				date:=string(rAFF[len(rAFF)-14:])
-				SaveMessage(chatId,"{~}2"+name,date)
 				hex:=converToBlobStr(mess)
-				SaveFile(chatId,name,hex)
-				//log.Println(mess)
+				SaveFile(chatId,name,date,hex)
 				messType=1
 				mess=[]byte("{~}2"+AFF)
-				err = c.WriteMessage(messType, mess)
-				if err != nil {
-					log.Println("Возможная ошибка отправки сообщения:", err)
-					break
-				}
 				AFF=""
 			}else{
-				log.Println("Пришёл файл, хотя не ожидался")
+				log.Println("Клиент:",r.RemoteAddr+". Пришёл файл, хотя не ожидался.")
 			}
 			mess=[]byte{}
 		}
 		if !flag{
 			err = c.WriteMessage(messType, mess)
 			if err != nil {
-				log.Println("Возможная ошибка отправки сообщения:", err)
+				log.Println("Клиент:",r.RemoteAddr+". Возможная ошибка отправки сообщения:", err)
 				break
 			}
 		}
 	}
+	log.Println("Клиент:",r.RemoteAddr+". Отключен.")
+	cuser.DEL()
+	return
 }
 
 func converToBlobStr(in []byte) (out string){
-	for i:=0; i<len(in); i++{
-		out+=fmt.Sprintf("%x", in[i])
-	}
+	out = hex.EncodeToString(in)
 	return out
 }
 
@@ -150,19 +204,65 @@ func converFromBlobStr(in string) []byte{
 	return decodedByteArray
 }
 
-func SaveMessage(chatId string, text string, time string){
-	_, err := db.Exec("INSERT INTO `c"+chatId+"` (`mess`, `date`) VALUES ('" + text + "','" + time + "')")
-    if err != nil {
-        log.Panic(err)
-    }
+func SaveMessage(chatId string, text string, time string,flag bool){
+	qm.push(makeMess(chatId,text,time,false))
+	if !msAct && flag{
+		messageSaver()
+	}
 }
-func SaveFile(chatId string, name string, data string){
-	req:="INSERT INTO `f"+chatId+"` (`name`, `data`) VALUES ('" + name + "','" + data + "')"
-	log.Println(req)
-	_, err := db.Exec(req)
-    if err != nil {
-        log.Panic(err)
-    }
+func SaveFile(chatId string, name string, date string, data string){
+	qm.push(makeMess(chatId,name,data,true))
+	SaveMessage(chatId,"{~}2"+name,date,false)
+	if !msAct{
+		messageSaver()
+	}
+}
+
+func messageSaver(){
+	msAct=true
+	if len(qm)>0{
+		lmess:=qm.pop()
+		if lmess.mtype{
+			req:="INSERT INTO `f"+lmess.chat+"` (`name`, `data`) VALUES ('" + lmess.mess + "','" + lmess.date + "')"
+			_, err := db.Exec(req)
+			if err != nil {
+				log.Println(err)
+				name:=qm.pop()
+				for i := 0; i<len(users[lmess.chat]);i++{
+					err = users[lmess.chat][i].c.WriteMessage(1, []byte("Ошибка отправки файла "+ name.mess[4:]+name.date))
+					if err != nil {
+						log.Println("Клиент:",users[lmess.chat][i].c.RemoteAddr().String()+". Возможная ошибка отправки сообщения:", err)
+						break
+					}
+				}
+			}else{
+				log.Println("Файл",lmess.mess, "сохранен")
+			}
+		}else{
+			log.Println("Сообщение",lmess.mess)
+			_, err := db.Exec("INSERT INTO `c"+lmess.chat+"` (`mess`, `date`) VALUES ('" + lmess.mess + "','" + lmess.date + "')")
+			for i := 0; i<len(users[lmess.chat]);i++{
+				err = users[lmess.chat][i].c.WriteMessage(1, []byte(lmess.mess+lmess.date))
+				if err != nil {
+					log.Println("Клиент:",users[lmess.chat][i].c.RemoteAddr().String()+". Возможная ошибка отправки сообщения:", err)
+					break
+				}
+			}
+			if err != nil {
+				log.Println(err)
+			}else{
+				log.Println("Сообщение сохранено")
+			}
+		}
+		if len(qm)>0{
+			defer messageSaver()
+		}else{
+			msAct=false
+		}
+	}else{
+		msAct=false
+	}
+	return
 }
 
 func makeID() string {
@@ -203,50 +303,30 @@ func checkChatExist(lid string) bool{
 	return false
 }
 
-func checkMessages(lid string) ([]string, [][]byte){
+func checkMessages(lid string) ([]string){//, [][]byte){
 	res, err := db.Query("SELECT * FROM `c"+lid+"` LIMIT 50")
     if err != nil {
         log.Panic(err)
-		return []string{"Ошибка загрузки данных, повторите попытку позже. Если ошибка сохраниться - обратитесь в техническую поддержку."},[][]byte{}
+		return []string{"Ошибка загрузки данных, повторите попытку позже. Если ошибка сохраниться - обратитесь в техническую поддержку."}//,[][]byte{}
     }
 	masmess:=[]string{}
-	masfile:=[][]byte{}
 	for res.Next(){
 		mess:=""
 		time:=""
 		if err := res.Scan(&mess,&time); err != nil {
 			log.Panic(err)
-            return []string{},[][]byte{}
+            return []string{}//,[][]byte{}
         }
 		time=strings.Replace(strings.Replace(strings.Replace(time, " ", "", -1), ":", "", -1), "-", "", -1)
 		masmess=append(masmess, mess+time)
-		if string([]rune(mess)[0:4])=="{~}2"{
-			name:=string([]rune(mess)[4:len([]rune(mess))])
-			
-			log.Println("Ищю файл",name)
-			var data string
-			if err := db.QueryRow("SELECT CONVERT(`data` USING utf8) FROM `f"+lid+"` WHERE `name`='"+name+"'").Scan(&data); err != nil {
-				if err == sql.ErrNoRows {
-					log.Println("Отсутствует файл",name,"in",lid)
-					return []string{"Ошибка загрузки данных, повторите попытку позже. Если ошибка сохраниться - обратитесь в техническую поддержку. (Отсутствует файл",name,"в",lid+")"}, [][]byte{}
-				}
-				log.Panic(err)
-				return []string{},[][]byte{}
-			}
-			ans:=converFromBlobStr(data)
-			if string(temp)==string([]byte{}){
-				temp=ans
-			}
-			masfile=append(masfile,ans)
-		}
-		
 	}
-	return masmess, masfile
+	return masmess
 }
 
 func main(){
-	log.Println("Сервер запущен. v0.2.4 ---> 03.12.2022 22:00");
-
+	log.Println("Сервер запущен. v0.2.5 ---> 06.12.2022 19:00");
+	
+	users = make(map[string][]user)
 
 	db2, err := sql.Open("mysql", "root:@/fastchat")
     db = db2
@@ -265,6 +345,8 @@ func main(){
     }
 
     log.Println("Успешное подключение к MySQL")
+	messageSaver()
+	log.Println("Запущено сохранение данных в MySQL")
 
     defer db.Close()
 
@@ -274,18 +356,11 @@ func main(){
 			log.Println("Ошибка доступа к", path,"-", err)
 			return nil
 		}
-		/*
-		if info.IsDir() && info.Name() == subDirToSkip {
-			fmt.Printf("skipping a dir without errors: %+v \n", info.Name())
-			return filepath.SkipDir
-		}
-		*/
 		if !info.IsDir() {
 			log.Println("Файл: ", path)
 			curpath:=strings.Replace(strings.Replace(strings.Replace(path, "\\", "/", -1), "public", "", -1), "index.html", "", -1)
 			log.Println(path,"==>",curpath)
 			http.HandleFunc(curpath, func(w http.ResponseWriter, r *http.Request){
-				//fmt.Fprintf(w,r.URL.Path)
 				if(curpath==r.URL.Path){
 					http.ServeFile(w, r, path)
 				}else{
@@ -307,3 +382,5 @@ func main(){
 	log.Println("Начало прослушивания порта",port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
+
+//========================================\\
