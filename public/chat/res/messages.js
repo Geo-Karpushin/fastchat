@@ -23,7 +23,7 @@ socket.onopen = () => {
 			idName.innerText = "400";
 		}else{
 			idName.innerText = "ID: "+id;
-			document.getElementById("qr").src="http://qrcoder.ru/code/?"+document.location.href+"&4&0";//"http://qrcoder.ru/code/?http%3A%2F%2F185.22.233.224%3A3000%2Fchat%2F%3F"+id+"&4&0";
+			document.getElementById("qr").src="http://qrcoder.ru/code/?"+document.location.href+"&4&0";//"http://qrcoder.ru/code/?http%3A%2F%2F185.22.233.219%3A3000%2Fchat%2F%3F"+id+"&4&0";
 			socket.send("1"+id);
 		}
 	}else{
@@ -58,22 +58,23 @@ socket.onmessage = (msg) => {
 			console.log("code 1");
 			open("./?"+msg.data.split("1")[1], "_self");
 		}else if (code=="2"){
-			let mess=msg.data.substring(2,msg.data.length-14);
-			let time=msg.data.substring(msg.data.length-14,msg.data.length);
+			let mess=msg.data.substring(2,msg.data.length-33);
+			let time=msg.data.substring(msg.data.length-33,msg.data.length);
 			if (mess.includes("")){
 				addMessage(3, mess, time, false);
 			}else{
 				addMessage(2, mess, time, false);
 			}
 		}else{
-			let mess=msg.data.substring(0,msg.data.length-14);
-			let time=msg.data.substring(msg.data.length-14,msg.data.length);
+			let mess=msg.data.substring(0,msg.data.length-33);
+			let time=msg.data.substring(msg.data.length-33,msg.data.length);
 			addMessage(1, mess, time, false);
 		}
 	}else{
-		file=new File([msg.data], awaitingFileName);
+		file = new File([msg.data], awaitingFileName);
 		let url = URL.createObjectURL(file);
 		download(url);
+		addMessage(1,"Файл "+awaitingFileName+" загружается, не закрывайте страницу, пока он не появится в папке загрузок для этого браузера.", "00:00", false);
 	}
 }
 
@@ -98,7 +99,6 @@ function addMessage(type, text, time, needToSave)
 		const curDate = new Date();
 		time = curDate.toLocaleString();
 	}else{
-		time=time.substring(0,4)+'-'+time.substring(4,6)+'-'+time.substring(6,8)+' '+time.substring(8,10)+':'+time.substring(10,12)+':'+time.substring(12,14)+' UTC';
 		const curDate = new Date(time);
 		time = curDate.toLocaleString();
 	}
@@ -131,7 +131,14 @@ function addMessage(type, text, time, needToSave)
 }
 
 function goodDate(date){
-	return date.getUTCFullYear()+("0" + (date.getUTCMonth() + 1)).slice(-2)+String(date.getUTCDate()).padStart(2, '0')+("0" + (date.getUTCHours())).slice(-2)+("0" + (date.getUTCMinutes())).slice(-2)+("0" + (date.getUTCSeconds())).slice(-2);
+	return date.getUTCFullYear() + "-" +
+    ("0" + (date.getUTCMonth()+1)).slice(-2) + "-" +
+    ("0" + date.getUTCDate()).slice(-2) + " " +
+    ("0" + date.getUTCHours()).slice(-2) + ":" +
+    ("0" + date.getUTCMinutes()).slice(-2) + ":" +
+    ("0" + date.getUTCSeconds()).slice(-2) + "." +
+	("0" + date.getUTCMilliseconds()).slice(-3) + " +0000 UTC";
+	//date.getUTCFullYear()+("0" + (date.getUTCMonth() + 1)).slice(-2)+String(date.getUTCDate()).padStart(2, '0')+("0" + (date.getUTCHours())).slice(-2)+("0" + (date.getUTCMinutes())).slice(-2)+("0" + (date.getUTCSeconds())).slice(-2);
 }
 
 function getFile(event){
@@ -145,14 +152,6 @@ function getCurFile(name,hash){
 	console.log("4"+hash);
 	socket.send("4"+hash);
 	awaitingFileName=name
-}
-
-function sendFiles(){
-	for(let i=0; i<inFiles.files.length; i++){
-		thisFiles.push(inFiles.files[i]);
-	}
-	helpRead();
-	inFiles.value=""
 }
 
 function helpRead() {
@@ -178,10 +177,10 @@ function readFile(event) {
 
 function sendFiles(){
 	for(let i=0; i<inFiles.files.length; i++){
-		if(inFiles.files[i].size<524287000){
+		if(inFiles.files[i].size<10485760){
 			thisFiles.push(inFiles.files[i]);
 		}else{
-			addMessage(1, "Ошибка отправки файла, превышен максимальный размер в 499 МБайт", "00:00", false);
+			addMessage(1, "Ошибка отправки файла, превышен максимальный размер в 10 МБайт", "00:00", false);
 		}
 	}
 	helpRead();
@@ -193,9 +192,11 @@ function helpRead() {
 	{
 		const curDate = new Date();
 		let gd=goodDate(curDate)
+		let tname=thisFiles[thisFiles.length-1].name;
 		console.log("File: ");
+		addMessage(1,"Файл "+tname+" отправляется, не закрывайте страницу, пока не появится сообщение с его именем", "00:00", false);
 		console.log(thisFiles[thisFiles.length-1]);
-		socket.send("2"+thisFiles[thisFiles.length-1].name+gd);
+		socket.send("2"+tname+gd);
 		reader.readAsArrayBuffer(thisFiles[thisFiles.length-1]);
 		thisFiles.pop();
 	}else if(reader.readyState==1){
