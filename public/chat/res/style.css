@@ -125,6 +125,7 @@ body {
     background-color: #333e0bb8;
     font-family: 'Mulish';
     margin: 5px;
+	max-height: 150px;
 }
 
 #check-password{
@@ -152,6 +153,7 @@ body {
     margin: 2.5px;
     color: #fff;
     border-bottom: 2px solid #d2d2d2;
+	max-height: 20px;
 }
 
 #set-password:empty:before {
@@ -287,7 +289,6 @@ body {
 #inText {
 	width: 90%;
     min-height: 17px;
-    border-bottom: 2px solid #d2d2d2;
     overflow-x: hidden;
     overflow-y: auto;
     box-shadow: #131a068c 0.1em 0.1em 0.2em;
@@ -295,7 +296,12 @@ body {
     padding: 1px;
     color: #d2d2d2;
 	background-color: #333e0bb8;
-	font-family: 'Mulish'; 
+	font-family: 'Mulish';
+	max-height: 80px;
+}
+
+#inText .text{
+	border-bottom: 2px solid #d2d2d2;
 }
 
 #inText:after {
@@ -324,6 +330,11 @@ body {
 	text-align:left;
 	word-break: break-all;
 	font-family: 'Mulish'; 
+}
+
+.message-text p
+{
+	margin: 0;
 }
 
 .message-time

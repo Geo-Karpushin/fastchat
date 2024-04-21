@@ -2,11 +2,27 @@
 <html lang="ru">
 	<head>
 		<title>Fast Chat</title>
-		<link rel="stylesheet" href="res/style.css">
 		<meta charset="utf-8"/>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<link rel="icon" href="../res/favicon.png" type="image/png">
+		<!-- Yandex.Metrika counter -->
+		<script type="text/javascript" >
+		   (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+		   m[i].l=1*new Date();
+		   for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+		   k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+		   (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+		   ym(92676524, "init", {
+				clickmap:true,
+				trackLinks:true,
+				accurateTrackBounce:true
+		   });
+		</script>
+		<noscript><div><img src="https://mc.yandex.ru/watch/92676524" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+		<!-- /Yandex.Metrika counter -->
+		<link rel="stylesheet" href="res/style.css">
 		<script src="../res/anime.min.js"></script>
 		<script src="./res/onLoad.js" defer></script>
 		<script src="./res/messages.js" defer></script>
@@ -33,7 +49,14 @@
 					<button class="icon-button" id = "send" onclick="send();"><img class="icon" src="./res/imgs/send.svg"></button>
 					<label class="icon-button" id = "openFiles" for="inFiles"><img class="icon" src="./res/imgs/addFiles.svg"></label>
 					<input id="inFiles" type="file" multiple>
-					<div id="inText" contenteditable></div>
+					<div id="inText">
+						<div class="text" contenteditable>
+							
+						</div>
+						<div class="files">
+							
+						</div>
+					</div>
 					<div id="settings-container">
 						<div id="menu">
 							<div id="set-password" contenteditable></div>

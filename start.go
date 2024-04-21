@@ -99,7 +99,7 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 				rMess := []rune(string(mess))
 				code := string(rMess[0:2])
 				ac := strings.Split(string(mess), code)[1]
-				if code == "1" {
+				if code == "1" {                                                                                       //Новый идентификатор
 					if ac != "" {
 						temp := strings.Split(ac, "")
 						var id, pass string = strings.ToLower(temp[0]), ""
@@ -131,24 +131,24 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 								log.Println("Клиент:", r.RemoteAddr,"ввёл неверный пароль от чата", id)
 								mess=[]byte("5")
 							}
-						} else if len(temp) == 1 && IsLetter(ac) && len(ac) >= 5 && len(ac) <= 10 && ac!="undefined" && ac!="chats"{
-							chatID = ac
+						} else if IsLetter(id) && len(id) >= 5 && len(id) <= 10 && id!="undefined" && id!="chats"{
+							chatID = id
 							cuser := makeUser(c, chatID)
 							ADD(&cuser)
 							log.Println("Клиент:", r.RemoteAddr+", создал чат к чат", chatID)
-							makeNewChat(ac)
+							makeNewChat(id)
 							continue
 						} else {
-							mess = []byte("1EOF")
+							mess = []byte("4EOF")
 						}
 					} else {
 						chatID = makeNewChat("")
-						mess = []byte("1" + chatID)
+						mess = []byte("4" + chatID)
 					}
 				} else if chatID != "None"{
-					if code == "2" {
+					if code == "2" {                                                                                   //Сообщение о скорой отправке файла с AFN (имя + время)
 						if ac != "" {
-							log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Запрошен файл с AFN =", ac)
+							log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Скоро придёт файл с AFN =", ac)
 							rac := []rune(ac)
 							AFN = ac
 							AFT = string(rac[len(rac)-33:])
@@ -161,11 +161,26 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 							mess = []byte("Ошибка отправки файла, имя должно быть не пустым")
 							log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Ошибка отправки файла, имя должно быть не пустым.")
 						}
-					} else if code == "4" {
+					} else if code == "3" {                                                                            //Запрос более старых сообщений
+						ctime, err := time.Parse(timeLayout, ac)
+						if err != nil {
+							log.Panic(err)
+						}
+						
+						messages := checkOldMessages(chatID, ctime)
+								
+						for i := 0; i < len(messages); i++ {
+							err = c.WriteMessage(1, []byte("6"+messages[i]))
+							if err != nil {
+								log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Возможная ошибка отправки сообщений после кода 1 в speaker():", err)
+								break
+							}
+						}
+					} else if code == "4" {                                                                            //Запрос файл по хешу имени
 						log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Запрошен файл", ac)
 						sendFile(ac, chatID, c)
 						continue
-					} else if code == "5" {
+					} else if code == "5" {                                                                            //Запрос на смену пароля
 						err := ExecuteQuery("INSERT INTO chats (id, password) VALUES (?, ?)", chatID, ac)
 						if err != nil {
 							log.Panic(err)
@@ -181,7 +196,7 @@ func speaker(w http.ResponseWriter, r *http.Request) {
 							}
 							continue
 						}
-					} else {
+					} else {                                                                                            //Обычное текстовое сообщение
 						ac = string(rMess[0 : len(rMess)-33])
 						date, err := time.Parse(timeLayout, string(rMess[len(rMess)-33:]))
 						if err != nil {
@@ -280,7 +295,7 @@ func save(chatID string, mtype bool, mess string, date time.Time, seconddata []b
 	err := ExecuteQuery("INSERT INTO \""+chatID+"\" (type, mess, date, seconddata) VALUES (?,?,?,?)", mtype, hMess, date, seconddata)
 	if err != nil {
 		for i := 0; i < len(users[chatID]); i++ {
-			err = users[chatID][i].c.WriteMessage(1, []byte("Ошибка сохранения сообщения"+mess+date.String()))
+			err = users[chatID][i].c.WriteMessage(1, []byte("Ошибка сохранения сообщения"+mess+date.Format(timeLayout)))
 			if err != nil {
 				log.Println("Клиент:", users[chatID][i].c.RemoteAddr().String()+", чат:", chatID+". Возможная ошибка отправки сообщения в messageSaver():", err)
 			}
@@ -291,7 +306,7 @@ func save(chatID string, mtype bool, mess string, date time.Time, seconddata []b
 			save(chatID, false, "2"+string([]byte(mess)[:len([]byte(mess))-33])+""+hMess, date, []byte{})
 		} else {
 			for i := 0; i < len(users[chatID]); i++ {
-				err = users[chatID][i].c.WriteMessage(1, []byte(mess+date.String()))
+				err = users[chatID][i].c.WriteMessage(1, []byte(mess+date.Format(timeLayout)))
 				if err != nil {
 					log.Println("Клиент:", users[chatID][i].c.RemoteAddr().String()+", чат:", chatID+". Возможная ошибка отправки сообщения в messageSaver():", err)
 				}
@@ -336,6 +351,21 @@ func checkChatPass(lid string) (pass string) {
 		log.Panic(err)
 	}
 	return
+}
+
+func checkOldMessages(lid string, ltime time.Time) []string {
+	res := db.session.Query("SELECT mess, date FROM \"" + lid + "\" WHERE type = false AND date < ? LIMIT 50", ltime).WithContext(ctx).Iter().Scanner()
+	masmess := []string{}
+	for res.Next() {
+		mess := ""
+		var ctime time.Time
+		if err := res.Scan(&mess, &ctime); err != nil {
+			log.Println(err)
+			return []string{"Ошибка загрузки данных чата, повторите попытку позже. Если ошибка сохраниться - обратитесь в техническую поддержку."}
+		}
+		masmess = append(masmess, mess+ctime.Format(timeLayout))
+	}
+	return masmess
 }
 
 func checkMessages(lid string) []string {
@@ -390,7 +420,7 @@ func main() {
 
 	log.SetOutput(f)
 
-	log.Println("v0.3.6 ---------==== FASTCHAT ====--------- 24.02.2023 17:00")
+	log.Println("v0.3.7 ---------==== FASTCHAT ====--------- 07.03.2023 20:00")
 	log.Println("Сервер запущен.")
 	defer log.Println("Завершение работы...")
 
