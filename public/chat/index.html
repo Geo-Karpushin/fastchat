@@ -11,7 +11,7 @@
 		<meta name="copyright" content="Все права принадлежат Карпушину Георгию"/>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<meta property="og:title" content="Fast Chat - Создание чата">
-		<meta property="og:description" content="Создайте свой чат здесь! Передавайте тексты, ссылки и файлы быстро, безопасно и без регистрации! Удобный и функциональный сервис Fast Chat.">
+		<meta property="og:description" content="Создайте свой чат здесь! Передавайте тексты, ссылки и файлы быстро, безопасно и без регистрации. Удобный и функциональный сервис Fast Chat.">
 		<meta property="og:url" content="https://fastchat.space">
 		<meta property="og:image" content="https://fastchat.space/res/favicon.png">
 		<meta property="og:type" content="website">
@@ -19,8 +19,9 @@
 		<meta property="og:locale" content="ru_RU">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<meta http-equiv="expires" content="0">
-		<link rel="icon" href="../../res/favicon.png?v=0.4.4" type="image/png">
-		<link rel="stylesheet" href="res/style.css?v=0.4.4">
+		<link rel="icon" href="../../res/imgs/favicon.png?v=0.5.0" type="image/png">
+		<link rel="stylesheet" href="/res/scripts/style.css?v=0.5.0">
+		<link rel="stylesheet" href="./res/style.css?v=0.5.0">
 		<!-- Yandex.Metrika counter -->
 		<script type="text/javascript" >
 		   (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
@@ -36,20 +37,20 @@
 		   });
 		</script>
 		<noscript><div><img src="https://mc.yandex.ru/watch/92676524" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+		<script>let pagetype = "chat";</script>
 		<!-- /Yandex.Metrika counter -->
 		<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
-		<script src="../res/anime.min.js"></script>
-		<script src="./res/onLoad.js?v=0.4.4" defer></script>
-		<script src="./res/messages.js?v=0.4.4" defer></script>
+		<script src="/res/scripts/messages.js?v=0.5.0" defer></script>
 	</head>
 	<body id="body">
 		<header id="header">
 			<div class="headers" id="header-left">
 				<h1 id ="name" title="Переход на главную страницу" onclick="window.location.href = '../';">Fast Chat</h1>
+				<!--<img class="icon" title="Пропало соединение с сервером! Всё в порядке, у вас сохранилась p2p связь с уже подключенными собеседниками" src="../../res/imgs/no-wifi.svg">-->
 			</div>
 			<div class="headers" id="header-right">
-				<h2 id="id-name" title="Нажмите, чтобы скопировать ссылку" onclick="copyToClipboard(document.location.href);">Создание чата...</h2>
-				<label class="icon-button" id="openQR"><img class="icon" title="Показать QR-код" src="./res/imgs/qr-icon.svg" id="icon-openQR"></label>
+				<h2 id="id-name" title="Нажмите, чтобы скопировать ссылку" onclick="copyToClipboard(document.location.href);">Загрузка...</h2>
+				<label class="icon-button" id="openQR"><img class="icon" title="Показать QR-код" src="../../res/imgs/qr-icon.svg" id="icon-openQR"></label>
 			</div>
 		</header>
 		<section id="mainpage">
@@ -62,15 +63,16 @@
 				</section>
 				<section id="in">
 					<div id="in1">
-						<button class="icon-button" id = "send" onclick="send();"><img class="icon" title="Отправить сообщение" src="./res/imgs/send.svg"></button>
-						<label class="icon-button" id = "openFiles" for="inFiles"><img class="icon" title="Открыть файлы" src="./res/imgs/addFiles.svg"></label>
+						<button class="icon-button" id = "send" onclick="send();"><img class="icon" title="Отправить сообщение" src="../../res/imgs/send.svg"></button>
+						<button class="icon-button" id = "translateDisplay" onclick="window.location.href = './../stream/' + window.location.search"><img class="icon" title="Перейти в видео-чат" src="../../res/imgs/display.svg"></button>
+						<label class="icon-button" id = "openFiles" for="inFiles"><img class="icon" title="Открыть файлы" src="../../res/imgs/addFiles.svg"></label>
 						<input id="inFiles" type="file" multiple>
 						<div id="inText">
 							<div id="text" title="Поле ввода" contenteditable></div>
 							<div id="files"></div>
 						</div>
 						<div id="settings-container">
-							<button class="icon-button" id = "settings" title="Настройки"><img class="icon" title="Настройки" src="./res/imgs/settings.svg" style="pointer-events: none;"></button>
+							<button class="icon-button" id = "settings" title="Настройки"><img class="icon" title="Настройки" src="../../res/imgs/settings.svg" style="pointer-events: none;"></button>
 						</div>
 					</div>
 					<div id="in2">
@@ -85,13 +87,13 @@
 			<div id="theerror">
 				<p>Произошла ошибка загрузки чата: Введённый ID не поддерживается.</p>
 				<p>Вы можете <a href="../chat">создать пустой чат</a> или <a href="../">вернуться на главную страницу</a> и создать чат с ID, 
-				состоящим из символов латинского алфавита и цифр (a..z или A..Z, 1..9) более 4 и менее 11 символов в длину, или ввести существующий ID чата.</p>
+				состоящим из символов латинского алфавита и цифр (a..z или A..Z, 1..9) от 5 до 10 символов в длину, или ввести существующий ID чата.</p>
 			</div>
 		</section>
 		<section class="menu-cover" id="password-menu">
 			<div class="menu">
 				<div class="close-menu" id="close-password-menu-div">
-					<label id="close-password-menu-div" class="close-icon-button"><img id="close-menu" class="icon" title="Закрыть меню" src="./res/imgs/close.svg"></label>
+					<label id="close-password-menu-div" class="close-icon-button"><img id="close-menu" class="icon" title="Закрыть меню" src="../../res/imgs/close.svg"></label>
 				</div>
 				<p>Для доступа к чату введите пароль и нажмите на кнопку "Открыть":</p>
 				<div class = "labelCover">
@@ -107,7 +109,7 @@
 		<section class="menu-cover" id="QR-container">
 			<div class="menu">
 				<div class="close-menu" id="close-QR-div">
-					<label id="close-QR-button" class="close-icon-button"><img id="close-QR" class="icon" title="Закрыть меню" src="./res/imgs/close.svg"></label>
+					<label id="close-QR-button" class="close-icon-button"><img id="close-QR" class="icon" title="Закрыть меню" src="../../res/imgs/close.svg"></label>
 				</div>
 				<div id="qr"></div>
 			</div>
@@ -123,7 +125,7 @@
 			-->
 			<div class="menu">
 				<div class="close-menu" id="close-menu-div">
-					<label id="close-icon-button" class="close-icon-button"><img id="close-menu" class="icon" title="Закрыть меню" src="./res/imgs/close.svg"></label>
+					<label id="close-icon-button" class="close-icon-button"><img id="close-menu" class="icon" title="Закрыть меню" src="../../res/imgs/close.svg"></label>
 				</div>
 				<div class = "labelCover">
 					<label for="inp" class="inp">
@@ -133,7 +135,7 @@
 					</label>
 				</div>
 				<input type="checkbox" id="useForRead" checked="true">
-				<label id="labelUseForRead" for="useForRead">Использовать для чтения чата</label>
+				<label id="labelUseForRead" for="useForRead">Неавторизованные пользователи не имеют прав</label>
 				<div class = "labelCover">
 					<label for="inp" class="inp">
 						<input type="text" id="set-tag" placeholder="&nbsp;">
@@ -141,9 +143,17 @@
 						<span class="focus-bg"></span>
 					</label>
 				</div>
+				<div id="switchThemeMenu">
+					<div>Сменить тему: </div>
+					<button class = "theme-button buttonSelected" onclick="localStorage.setItem('theme', 'system'); updateTheme();"><img src="../../res/imgs/clock.svg" title="Как в системе"></button>
+					<button class = "theme-button" onclick="localStorage.setItem('theme', 'light'); updateTheme();"><img src="../../res/imgs/light.svg" title="Светлая"></button>
+					<button class = "theme-button" onclick="localStorage.setItem('theme', 'dark'); updateTheme();"><img src="../../res/imgs/dark.svg" title="Тёмная"></button>
+				</div>
+				<!--
 				<button class="menu-button" id="change-theme" data-theme="0" onclick="changeThemeFunction();">
 					Сменить тему
 				</button>
+				-->
 				<button class="menu-button" id="apply-settings" onclick="applySettings();">
 					Применить
 				</button>

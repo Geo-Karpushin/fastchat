@@ -1,0 +1,674 @@
+@font-face {
+    font-family: NightmareMaker;
+    src: url(/res/fonts/NightmareMaker.ttf)
+}
+
+@font-face {
+    font-family: Mulishs;
+    src: url(/res/fonts/Mulish-VariableFont_wght.ttf)
+}
+
+@font-face {
+    font-family: Dorblue;
+    src: url(/res/fonts/Dorblue.ttf)
+}
+
+a {
+    color: var(--url-color);
+    transition: .5s
+}
+
+a:visited {
+    color: var(--visited-url-color)
+}
+
+a:active,
+a:hover {
+    color: var(--hover-url-color);
+    text-decoration: underline var(--hover-url-color)
+}
+
+body,
+html {
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    overflow: hidden;
+    display: block;
+    font-family: Mulish
+}
+
+.restricted {
+    --in1: none;
+	--in2: contents;
+}
+
+.darkTheme {
+    --bg: #252525, #3e3e3e, #565656;
+    --bg-messages: transparent;
+    --messages-shadow: 0.5vmin 0.2vmin;
+    --main-inputs: #ffffff5d;
+    --menu-color: 35, 35, 35, 0.85;
+    --text-color: #fff;
+}
+
+body {
+    --bg: #1F6521, #53900F, #D6CE15;
+    --bg-messages: #dddddd;
+    --messages-shadow: 3vmin 2vmin;
+    --main-inputs: #d3d3d377;
+    --close-color: #ff0000a3;
+    --menu-color: 35, 35, 35, 0.9;
+    --text-color: #000;
+    --url-color: #33aaff;
+    --visited-url-color: #22bbbb;
+    --hover-url-color: #aaffff;
+	--in1: contents;
+    --in2: none;
+    background: linear-gradient(45deg, var(--bg));
+    background-size: 200% 200%;
+    animation: gradient 20s ease infinite;
+    margin: 0;
+    font-size: 2vmax
+}
+
+#header {
+	position: absolute;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap
+}
+
+.headers {
+    background: rgba(var(--menu-color));
+    padding: 0 1% 0 1%;
+    align-items: center;
+    z-index: 1;
+	padding: 5px
+}
+
+#header-left {
+	display: flex;
+    justify-content: center;
+    border-bottom-right-radius: 3vmin
+}
+
+#header-right {
+    display: inline-flex;
+    border-bottom-left-radius: 3vmin
+}
+
+#name {
+    font-family: Dorblue;
+    color: #d3d3d3;
+    font-size: 6vmin;
+    margin: 0;
+    font-weight: 100;
+    transition: .5s;
+	margin-right: 1vh
+}
+
+#name:active,
+#name:hover {
+    color: #fff;
+    cursor: pointer
+}
+
+#openQR {
+    height: 100%;
+    display: flex;
+    align-items: center
+}
+
+#icon-openQR {
+	height: 6vmin
+}
+
+#id-name {
+    font-family: Mulishs;
+    color: #d3d3d3;
+    font-size: 6vmin;
+    margin: 0;
+    transition: .5s;
+	display: contents
+}
+
+#id-name img {
+	height: 6vmin
+}
+
+#id-name:active,
+#id-name:hover {
+    color: #fff;
+    cursor: copy
+}
+
+#mainpage {
+    display: flex
+}
+
+
+#main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#in {
+    display: inline-flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row-reverse
+}
+
+#inFiles {
+    opacity: 0;
+    position: absolute;
+    z-index: -1
+}
+
+.menu {
+    max-width: 75vw;
+    min-width: 10vw;
+    background: rgba(var(--menu-color));
+    box-shadow: #f0f0f0 0 0 5vmin .5vmin;
+    border-radius: 1vmin;
+    margin: 1vmin;
+    padding: 2vmin
+}
+
+.menu p {
+    color: #ddd
+}
+
+.menu select {
+	background-color: #b7b7b7b7;
+    width: 65%;
+    color: #ffffffde;
+    font-size: 0.8em;
+    font-family: Mulish;
+    border-radius: .7vmax;
+    padding: .5vmax;
+    margin-top: 1.5vmin
+}
+
+.menu option {
+	color: #ffffffde
+}
+
+.menu-cover {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    display: none;
+    flex-direction: column;
+    z-index: 2;
+    background: rgba(var(--menu-color))
+}
+
+.menu-button {
+    margin: 0 0 1.5vmin 0;
+    width: 100%;
+    word-break: keep-all;
+    background: #b7b7b7b7;
+    border-radius: .7vmax;
+    font-size: .9em;
+    color: #ffffffde;
+    font-weight: 500;
+    transform-origin: 0 0;
+    transform: translate3d(0, 0, 0);
+    transition: all .2s ease;
+    border: 0;
+    box-shadow: inset 0 -1px 0 rgb(0 0 0 / 30%);
+    font-family: Mulish
+}
+
+.menu-button:active,
+.menu-button:hover {
+    background: var(--main-inputs);
+    font-weight: 850;
+    background: var(--main-inputs);
+    box-shadow: inset 0 -2px 0 #d3d3d3
+}
+
+.labelCover {
+    display: grid;
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    text-align: center;
+    box-sizing: border-box;
+    margin-bottom: 1.5vmin;
+	margin-top: 1.5vmin
+}
+
+.inp {
+    position: relative;
+    margin: auto;
+    width: 100%;
+    border-radius: .7vmax;
+    overflow: hidden;
+    font-family: Mulish
+}
+
+.inp .label {
+    display: inline;
+    padding: .2em .6em .3em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: .25em;
+    position: absolute;
+    top: 26%;
+    left: 3%;
+    font-size: .9em;
+    color: rgb(255 40 40);
+    font-weight: 500;
+    transform-origin: 0 0;
+    transform: translate3d(0, 0, 0);
+    transition: all .2s ease;
+    pointer-events: none;
+    font-family: Mulish
+}
+
+#switchThemeMenu {
+    transition: all .5s ease;
+    color: #ffffffde;
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: nowrap
+}
+
+#switchThemeMenu button {
+    padding: .5vmax
+}
+
+#switchThemeMenu button img {
+    height: 1.5vmax;
+    vertical-align: middle;
+    display: flex;
+    justify-content: center;
+    padding: .25vmax;
+    align-content: center
+}
+
+.theme-button {
+    margin: 0 0 1.5vmin 0;
+    word-break: keep-all;
+    background: #b7b7b7b7;
+    border-radius: .7vmax;
+    font-size: .9em;
+    color: #ffffffde;
+    font-weight: 500;
+    transform-origin: 0 0;
+    transform: translate3d(0, 0, 0);
+    transition: all .2s ease;
+    border: 0;
+    box-shadow: inset 0 -1px 0 rgb(0 0 0 / 30%);
+    font-family: Mulish
+}
+
+.theme-button:active,
+.theme-button:hover {
+    background: var(--main-inputs);
+    font-weight: 850;
+    background: var(--main-inputs);
+    box-shadow: inset 0 -2px 0 #d3d3d3
+}
+
+.buttonSelected {
+    box-shadow: inset 0 -2px 0 #086bc7 !important;
+    background: #336db477 !important;
+    font-weight: 850 !important
+}
+
+#check-password-Text:empty:before {
+    content: 'Введите пароль';
+    color: #ffffffde
+}
+
+#password-Text:empty:before {
+    content: 'Введите желаемый пароль';
+    color: #ffffffde
+}
+
+#tag-Text:empty:before {
+    content: 'Введите желаемый тэг';
+    color: #ffffffde
+}
+
+.inp .focus-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    transform: scaleX(0);
+    transform-origin: left
+}
+
+.inp input {
+    appearance: none;
+    width: 100%;
+    border: 0;
+    padding: 6% 3% 0 4%;
+    font-size: 1.05em;
+    font-weight: 400;
+    background: 0 0;
+    color: #ffffffde;
+    box-shadow: inset 0 -2px 0 #b7b7b7;
+    transition: all .15s ease;
+    font-family: Mulish
+}
+
+.inp input:active,
+.inp input:hover {
+    transition: all .3s ease;
+    box-shadow: inset 0 -2px 0 #fff
+}
+
+.inp input:not(:placeholder-shown)+.label:empty {
+    color: rgb(255 255 255 / 50%)
+}
+
+.inp input:not(:placeholder-shown)+.label {
+    transform: translate3d(0, -35%, 0) scale(.6)
+}
+
+.inp input:focus {
+    background: var(--main-inputs);
+    outline: 0;
+    box-shadow: inset 0 -2px 0 #d3d3d3
+}
+
+.inp input:focus+.label:empty {
+    color: #d3d3d3
+}
+
+.inp input:focus+.label {
+    -webkit-text-stroke: .04px #000;
+    transform: translate3d(0, -35%, 0) scale(.6)
+}
+
+.inp input:focus+.label+.focus-bg {
+    transform: scaleX(1);
+    transition: all .1s ease
+}
+
+.close-menu {
+    max-width: 100%;
+    width: 100%;
+    min-width: 10vw;
+    display: flex;
+    flex-direction: row-reverse
+}
+
+#qr {
+    max-height: 50vh
+}
+
+#qr canvas {
+    max-height: 50vmin
+}
+
+#qr img {
+    height: 50vmin;
+    max-height: 50vmin;
+	border: 2px white solid
+}
+
+#password-menu {
+    background: 0 0
+}
+
+#password-menu .menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center
+}
+
+#errorpage {
+    margin-left: auto;
+    margin-right: auto;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    left: 0;
+    background: rgba(var(--pre-bg), .3)
+}
+
+#theerror {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(var(--menu-color));
+    width: 70%;
+    color: #ddd;
+    border-radius: 10px;
+    padding: 5px
+}
+
+.settings-contentable {
+    min-height: 17px;
+    width: 100%;
+    margin: 2.5px;
+    color: #ddd;
+    border-bottom: 2px solid #ddd;
+    max-height: 20px;
+    margin-bottom: 10px;
+    margin-top: 15px
+}
+
+#set-password:empty:before {
+    content: 'Введите новый пароль'
+}
+
+#set-tag:empty:before {
+    content: 'Введите новый тэг'
+}
+
+#search-tag:empty:before {
+    content: 'Поиск по тэгу'
+}
+
+.icon-button {
+    padding-top: .4%;
+    color: #fff;
+    border-radius: .5vmin;
+    font-size: .9em;
+    transform-origin: 0 0;
+    transform: translate3d(0, 0, 0);
+    transition: all .2s ease;
+    border: 0;
+    font-family: Mulish;
+    background: 0;
+    margin-right: .5vw;
+    margin-left: .5vw
+}
+
+.icon-button:active,
+.icon-button:hover {
+    font-weight: 850;
+    background: var(--main-inputs);
+    box-shadow: inset 0 -2px 0 #d3d3d3
+}
+
+.close-icon-button {
+    padding-top: .4%;
+    background: rgba(var(--very-dark), .33);
+    min-height: 25px;
+    border-radius: 3px;
+    top: 26%;
+    left: 6%;
+    font-size: .9em;
+    color: hsla(var(--text-hover), .87);
+    font-weight: 500;
+    transform-origin: 0 0;
+    transform: translate3d(0, 0, 0);
+    transition: all .2s ease;
+    border: 0;
+    box-shadow: inset 0 -1px 0 rgba(var(--very-dark), .3);
+    font-family: Mulish
+}
+
+.close-icon-button .icon {
+    pointer-events: none
+}
+
+.close-icon-button:active,
+.close-icon-button:hover {
+    background: var(--close-color);
+    color: rgb(var(--text-hover))
+}
+
+#messages-content {
+    position: relative;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    font-family: Mulish;
+    overflow: hidden
+}
+
+#messages {
+    display: flex;
+    flex-direction: column-reverse;
+    font-family: Mulish;
+    overflow-y: auto;
+}
+
+#messages-container {
+    max-height: 100%;
+    font-family: Mulish;
+    overflow: auto;
+    padding: 0 3vmin;
+    padding-top: 3vmin
+}
+
+#messages-container::-webkit-scrollbar {
+    width: 0
+}
+
+.message {
+    margin: 0 1vw 3vw 1vw;
+    display: flex;
+    flex-direction: column;
+    border-radius: 1.5vmin 1.5vmin 0 1.5vmin;
+    box-shadow: #f0f0f0 0 0 1vmin .5vmin;
+    background: var(--bg-messages);
+    justify-content: flex-end;
+    position: relative;
+    overflow: hidden;
+    padding: 1.5vmin
+}
+
+.message-img-container {
+    max-height: 10vh;
+    width: 100%;
+    display: flex;
+    justify-content: center
+}
+
+.message-img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain
+}
+
+.message-text {
+    width: 100%;
+    text-align: left;
+    word-break: break-word;
+    font-family: Mulish;
+    color: var(--text-color);
+    white-space: pre-wrap
+}
+
+.message-text p {
+    margin: 0;
+    color: var(--text-color)
+}
+
+.message-bottom {
+    font-size: .5em;
+    width: 100%;
+    display: flex;
+    font-family: Mulish;
+    justify-content: space-between;
+    color: var(--text-color)
+}
+
+#inText {
+    width: 90%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    color: #fff;
+    font-family: Mulish
+}
+
+#inText:focus-visible {
+    outline: 0
+}
+
+#inText:after {
+    animation: blink 1s linear infinite alternate
+}
+
+#text {
+	width: 100%;
+    border-bottom: .25vh solid #d3d3d3
+}
+
+#text:empty::before {
+    content: "Введите сообщение"
+}
+
+#text:focus-visible {
+    outline: 0
+}
+
+.menu label {
+    color: #ffffffde
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0
+    }
+
+    100% {
+        opacity: 1
+    }
+}
+
+@keyframes gradient {
+    0% {
+        background-position: 0 50%
+    }
+
+    50% {
+        background-position: 100% 50%
+    }
+
+    100% {
+        background-position: 0 50%
+    }
+}

@@ -1,7 +1,7 @@
 //======= VARS AND CONSTS AND CONFIG =======\\
 
 const reader = new FileReader();
-const urlregex = /((([a-zA-Z0-9]+:){1})([a-zA-Z0-9\-\_\~\(\)\*\%\!\#\$\&\'\+\/\,\:\;\=\?\@\[\]]+(\.[a-zA-Z0-9\-\_\~\(\)\*\%\!\#\$\&\'\+\/\,\:\;\=\?\@\[\]]+)+)([\?#]{1}[a-zA-Z0-9\-\.\_\~\(\)\*\%\!\#\$\&\'\+\/\,\:\;\=\?\@\[\]]*)?)/g;
+const urlregex = /((([a-zA-Z0-9]+:){1})([a-zA-Z0-9\-\_\~\(\)\*\%\!\#\$\&\'\+\/\,\:\;\=\?\@\[\]]+([\.\:][a-zA-Z0-9\-\_\~\(\)\*\%\!\#\$\&\'\+\/\,\:\;\=\?\@\[\]]+)+)([\?#]{1}[a-zA-Z0-9\-\.\_\~\(\)\*\%\!\#\$\&\'\+\/\,\:\;\=\?\@\[\]]*)?)/g;
 const imgFormat = /\.(jpeg|jpg|jfif|jpe|dib|rle|gif|png|apng|bmp|ico)$/i;
 
 const themeButtons = Array.prototype.slice.call(document.getElementById("switchThemeMenu").getElementsByTagName('button'));
@@ -35,6 +35,9 @@ let in1 = document.getElementById("in1");
 let in2 = document.getElementById("in2");
 let cpmd = document.getElementById("close-password-menu-div");
 let passwordMenu = document.getElementById("password-menu");
+let mc = document.getElementById("menu-cover");
+let pmc = document.getElementById("password-menu");
+let qrContainer = this.document.getElementById("QR-container");
 let passwordEntered = false;
 let awaitingFileName = undefined;
 let nextPic = undefined;
@@ -45,6 +48,8 @@ let useForRead = true;
 let selectedTheme = localStorage.getItem("theme");
 let needToScroll = true;
 let lastMessage;
+let needToNotify = false;
+
 // let themeSet = false;
 
 //================== CODE ==================\\
@@ -56,11 +61,11 @@ socket.onopen = () => {
 	console.log("Подключение успешно");
 	
 	if (id != undefined && id != "undefined" && id != "EOF"){
-		socket.send(JSON.stringify({ code: 0, text: id, tag: "", time: goodDate(new Date()) }));
+		socket.send(JSON.stringify({ code: 0, text: id, tag: pagetype, time: goodDate(new Date()) }));
 		socket.send(JSON.stringify({ code: 10, text: "", tag: "", time: goodDate(new Date()) }));	
 		return;
 	} else if (id != "EOF"){
-		socket.send(JSON.stringify({ code: 0, text: "", tag: "", time: goodDate(new Date()) }));
+		socket.send(JSON.stringify({ code: 0, text: "", tag: pagetype, time: goodDate(new Date()) }));
 		return;
 	}
 	resetID();
@@ -73,15 +78,17 @@ function resetID(){
 	document.title = "Fast Chat - "+id.toUpperCase();
 	if (id != undefined && id != "undefined") {
 		if (id == "EOF") {
+            changeInContent(1);
 			mainpage.style.display = "none";
 			passwordMenu.style.display = "none";
 			errorpage.style.display = "flex";
 			idName.innerText = "400";
 		} else {
+            changeInContent(2);
 			mainpage.style.display = "flex";
 			passwordMenu.style.display = "none";
 			errorpage.style.display = "none";
-			idName.innerHTML = "<img class='icon' title='Нажмите, чтобы скопировать ссылку' src='../../res/imgs/link.svg'> ID: " + id.toUpperCase();
+			idName.innerHTML = "<img class='icon' title='Нажмите, чтобы скопировать ссылку' src='../../res/imgs/link.svg'>&#160;ID: " + id.toUpperCase();
 			makeQR();
 		}
 	} else {
@@ -112,12 +119,16 @@ socket.addEventListener("message", (msg) => {
 	console.log("Сообщение от сервера")
 	if (typeof(msg.data) == "string"){
 		mess = JSON.parse(msg.data);
+		console.log(mess)
 		switch (mess.code){
 			case 0:
 				open("./?" + mess.text, "_self");
 				break;
 			case 1:
 			case 2:
+                if (pagetype == "stream" && !document.body.classList.contains("chatopened")) {
+                    document.getElementById("chatbtn").getElementsByTagName("img")[0].src = "../../res/imgs/chatupdated.svg";
+                }
 				addMessage(mess);
 				break;
 			case 3:
@@ -181,20 +192,36 @@ socket.addEventListener("message", (msg) => {
 			// 		setDarkTheme();
 			// 	}
 			// 	break;
+			// case 9:
+			// 	users
 			case 10:
 				addMessage({code: 1, text: `Теперь вы в чате вместе с ${mess.text}`, tag: "INFO", time: goodDate(new Date())});
+                if (pagetype == "stream" && mess.tag == "stream") {
+                    addRemoteClient(mess.text);
+                }
 				break;
 			case 11:
-				addMessage({code: 1, text: `В вашем чате началась видеоконференция!\nПрисоединиться к конференции: https://fastchat.space/stream/?${id}`, tag: "INFO", time: goodDate(new Date())});
+                if (pagetype == "chat") {
+				    addMessage({code: 1, text: `В вашем чате началась видеоконференция!\nПрисоединиться к конференции: https://fastchat.space/stream/?${id}`, tag: "INFO", time: goodDate(new Date())});
+                } else if (pagetype == "stream") {
+                    appendOffer(mess.text, mess.tag, mess.time);
+                }
+                break;
+			case 12:
+                if (pagetype == "stream") {
+                    appendAnswer(mess.text, mess.tag);
+                }
 				break;
-			// case 12:
-			// 	appendAnswer(mess.text, mess.tag);
-			// 	break;
-			// case 13:
-			// 	appendIceCandidate(mess.text, mess.tag);
-			// 	break;
+			case 13:
+                if (pagetype == "stream") {
+                    appendIceCandidate(mess.text, mess.tag);
+                }
+				break;
 			case 14:
-				addMessage({code: 1, text: `${mess.text} покинул чат.`, tag: "INFO", time: goodDate(new Date())});
+				addMessage({code: 1, text: `${mess.text} покинул чат`, tag: "INFO", time: goodDate(new Date())});
+                if (pagetype == "stream") {
+                    removeWRTCConnection(mess.text);
+                }
 				break;
 		}
 	} else {
@@ -307,25 +334,28 @@ async function addMessage(inpMess) {
 	if (lastMessage == undefined || lastMessage < curDate){
 		lastMessage = curDate;
 	}
+	if (needToNotify) {
+		let not = new Audio('/res/imgs/not.wav');
+		not.play();
+	}
 }
 
 // Показать форму ввода пароля
 function showPasswordForm(){
 	mainpage.style.display = "none";
 	passwordMenu.style.display = "flex";
+
+    changeInContent(2);
 }
 
 // Изменить вид поля ввода
 function changeInContent(type){
 	switch(type){
 		case 1:
-			in2.style.display = "none";
-			in1.style.display = "contents";
-			
+			document.body.classList.remove("restricted");
 			break
 		case 2:
-			in1.style.display = "none";
-			in2.style.display = "contents";
+            document.body.classList.add("restricted");
 			break
 	}
 }
@@ -451,25 +481,8 @@ function wrapLinks(str) {
 	return str.replace(urlregex, "<a class='file-url' target='_blank' href='$1'>$1</a>");
 }
 
-// Устанавливает тему
-// function setTheme(num) {
-// 	if (num >= themes.length) {
-// 		num %= themes.length
-// 	}
-// 	changeTheme.dataset.theme = num;
-// 	for (let i = 0; i < themesVars.length; i++) {
-// 		document.documentElement.style.setProperty(themesVars[i], themes[num][i]);
-// 	}
-// }
 
-// function changeThemeFunction() {
-// 	if (document.body.classList.contains("darkTheme")) {
-// 		setLightTheme()
-// 	} else {
-// 		setDarkTheme()
-// 	}
-// }
-
+// Обновить тему в соответствии с текущими настройками
 function updateTheme() {
 	themeButtons.forEach(e => {
 		e.classList.remove("buttonSelected");
@@ -498,22 +511,21 @@ function updateTheme() {
 
 updateTheme();
 
+// Установить тёмную тему
 function setDarkTheme() {
 	document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')[0].setAttribute('href', '../../res/imgs/dark_favicon.png');
 	document.body.classList.add("darkTheme");
-	//themeControllerImg.src = "./res/light.svg";
-	// changeTheme.dataset.theme = 1;
 	console.log("Установлена тёмная тема");
 }
 
+// Установить светлую тему
 function setLightTheme() {
 	document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')[0].setAttribute('href', '../../res/imgs/favicon.png');
 	document.body.classList.remove("darkTheme");
-	//themeControllerImg.src = "./res/dark.svg";
-	// changeTheme.dataset.theme = 0;
 	console.log("Установлена светлая тема");
 }
 
+// Поменять тему на противоположную текущей
 function switchTheme () {
 	switch (localStorage.getItem("theme")) {
 		case "system":
@@ -531,6 +543,16 @@ function switchTheme () {
 			break;
 	}
 	updateTheme();
+}
+
+// Скопировать в буфер обмена
+function copyToClipboard(text) {
+	var input = document.createElement('input');
+	input.setAttribute('value', text);
+	document.body.appendChild(input);
+	input.select();
+	document.execCommand('copy');
+	document.body.removeChild(input);
 }
 
 // Отправка сообщения на Enter
@@ -551,6 +573,29 @@ messages.addEventListener("scroll", function () {
     } else {
 		needToScroll = false;
 	}
+});
+
+document.addEventListener("visibilitychange", () => {
+    needToNotify = document.hidden;
+});
+
+document.addEventListener("click", function(e) {
+    if (e.target.id == 'apply-settings'){
+        mc.style.display = 'none';
+    } else if (e.target.id == "close-icon-button" || e.target.id == "search") {
+        mc.style.display = 'none';
+        localStorage.setItem("theme", selectedTheme);
+        updateTheme();
+    } else if (e.target.id == 'settings' || e.target.id=='settings-container') {
+        mc.style.display = (mc.style.display != 'flex') ? 'flex' : 'none';
+    } else if (e.target.id == 'close-password-menu-div') {
+        pmc.style.display = 'none';
+        mainpage.style.display = "flex";
+    } else if(e.target.id == "openQR" || e.target.id == "icon-openQR") {
+        qrContainer.style.display = "flex";
+    } else if (e.target.id == "close-QR-button") {
+        qrContainer.style.display = "none";
+    }
 });
 
 // Меняет режим использования пароля

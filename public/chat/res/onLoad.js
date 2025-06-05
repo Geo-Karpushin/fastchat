@@ -57,11 +57,8 @@ window.addEventListener("load",function(event) {
 			mc.style.display = 'none';
 		} else if (e.target.id == "close-icon-button" || e.target.id == "search") {
 			mc.style.display = 'none';
-			if (lastKnownTheme == 0) {
-				setLightTheme();
-			} else {
-				setDarkTheme();
-			}
+			localStorage.setItem("theme", selectedTheme);
+			updateTheme();
 		} else if (e.target.id == 'settings' || e.target.id=='settings-container') {
 			mc.style.display = (mc.style.display != 'flex') ? 'flex' : 'none';
 		} else if (e.target.id == 'close-password-menu-div') {
@@ -74,21 +71,21 @@ window.addEventListener("load",function(event) {
 		}
 	});
 
-	if (localStorage.getItem("theme") === null) {
-		if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-			localStorage.setItem("theme", "dark");
-			setDarkTheme();
-		} else {
-			localStorage.setItem("theme", "light");
-			setLightTheme();
-		}
-	} else {
-		if (localStorage.getItem("theme") == "dark") {
-			setDarkTheme();
-		} else {
-			setLightTheme();
-		}
-	}
+	// if (localStorage.getItem("theme") === null) {
+	// 	if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+	// 		localStorage.setItem("theme", "dark");
+	// 		setDarkTheme();
+	// 	} else {
+	// 		localStorage.setItem("theme", "light");
+	// 		setLightTheme();
+	// 	}
+	// } else {
+	// 	if (localStorage.getItem("theme") == "dark") {
+	// 		setDarkTheme();
+	// 	} else {
+	// 		setLightTheme();
+	// 	}
+	// }
 });
 
 function copyToClipboard(text) {

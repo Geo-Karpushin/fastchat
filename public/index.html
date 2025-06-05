@@ -3,7 +3,7 @@
 	<head>
 		<title>Передавайте информацию бесплатно без регистрации быстро и безопасно - Fast Chat</title>
 		<meta name="keywords" content="быстрый чат, передача текста, передача ссылок, передача файлов, безопасно, с устройство на устройство, бесплатный чат, анонимный чат, временное хранение данных, полезный сайт, бесплатно, без регистрации"/>
-		<meta name="description" content="Бесплатный сервис без регистрации для быстрой, безопасной и удобной передачи текстов, ссылок и файлов между устройствами без регистрации бесплатно. Отправляйте данные мгновенно и анонимно с Fast Chat!"/>
+		<meta name="description" content="Видеочаты, чаты для передачи текстов, ссылок и файлов между устройствами бесплатно без регистрации быстро и безопасно!"/>
 		<meta http-equiv="content-language" content="ru"/>
 		<meta charset="utf-8"/>
 		<meta name="robots" content="all"/>
@@ -11,14 +11,14 @@
 		<meta name="copyright" content="Все права принадлежат Карпушину Георгию"/>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<meta property="og:title" content="Fast Chat - Главная страница">
-		<meta property="og:description" content="Бесплатный сервис без регистрации для быстрой, безопасной и удобной передачи текстов, ссылок и файлов между устройствами без регистрации бесплатно. Отправляйте данные мгновенно и анонимно с Fast Chat!">
+		<meta property="og:description" content="Видеочаты, чаты для передачи текстов, ссылок и файлов между устройствами бесплатно без регистрации быстро и безопасно!">
 		<meta property="og:url" content="https://fastchat.space">
-		<meta property="og:image" content="https://fastchat.space/res/favicon.png">
+		<meta property="og:image" content="https://fastchat.space/res/imgs/favicon.png">
 		<meta property="og:type" content="website">
 		<meta property="og:site_name" content="Fast Chat">
 		<meta property="og:locale" content="ru_RU">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-		<link rel="icon" href="./res/favicon.png?v=0.4.4" type="image/png"/>
+		<link rel="icon" href="./res/imgs/favicon.png?v=0.4.4" type="image/png"/>
 		<link rel="stylesheet" href="res/style.css?v=0.4.4"/>
 		<!-- Yandex.Metrika counter -->
 		<script type="text/javascript" >
@@ -36,7 +36,6 @@
 		</script>
 		<noscript><div><img src="https://mc.yandex.ru/watch/92676524" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 		<!-- /Yandex.Metrika counter -->
-		<script src="res/anime.min.js"></script>
 		<script src="res/spawn-background.js?v=0.4.4" async></script>
 		<script src="res/script.js?v=0.4.4" defer></script>
 	</head>
@@ -53,11 +52,17 @@
 				</label>
 			</section>
 			<section id = "startChat">
-				<button class = "mainButtons" id = "startButton" onclick="startChat();">Создать Чат!</button>
+				<button class = "mainButtons startButton" id = "startButton" onclick="startChat();">Создать Чат!</button>
+				<button class = "mainButtons startButton" id = "startVButton" onclick="startVChat();">Создать Видео-чат!</button>
 			</section>
 			<section id = "bottomButtons">
 				<button href="#about" id="toDescription" class="mainButtons" onclick="goDown();">⇃ О САЙТЕ ⇂</button>
-				<button id="switchTheme" class="mainButtons" onclick="switchTheme();"><img src="./res/dark.svg" title="Сменить тему"></button>
+				<button id="switchTheme" class="mainButtons" onclick="switchTheme();"><img src="./res/imgs/dark.svg" title="Сменить тему"></button>
+				<div id="switchThemeMenu">
+					<button class = "mainButtons themeSelected" onclick="localStorage.setItem('theme', 'system'); updateTheme();"><img src="./res/imgs/clock.svg" title="Как в системе"></button>
+					<button class = "mainButtons" onclick="localStorage.setItem('theme', 'light'); updateTheme();"><img src="./res/imgs/light.svg" title="Светлая"></button>
+					<button class = "mainButtons" onclick="localStorage.setItem('theme', 'dark'); updateTheme();"><img src="./res/imgs/dark.svg" title="Тёмная"></button>
+				</div>
 			</section>
 		</main>
 		<section id="description">
@@ -103,7 +108,7 @@
 			<div class="row">
 				<ul>
 					<li><a href="https://vk.com/fastchatspace" title = "Сообщество ВКонтакте">VK</a></li>
-					<li><a href="https://t.me/fastchatspace" title = "Телеграм канал">Telegram</a></li>
+					<li><a href="https://t.me/+zzvasBr2c9w4YzRi" title = "Телеграм канал">Telegram</a></li>
 					<li><a href="mailto:info.fastchat@gmail.com" title = "Почта Администрации">Администрация</a></li>
 					<li><a href="mailto:geokarpushin@gmail.com" title = "Почта Владельца">Владелец</a></li>
 					<li><a href="../res/user-agreement.docx" download="Пользовательское Соглашение.docx" title = "Пользовательское Соглашение">Пользовательские Соглашение</a></li>

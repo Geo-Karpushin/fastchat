@@ -4,7 +4,9 @@ let alph = /^[A-Z0-9]+$/;
 
 const errorPlace = document.getElementById("label");
 const todesc = document.getElementById("toDescription");
-const themeControllerImg = document.getElementById("switchTheme").getElementsByTagName('img')[0];;
+const themeControllerImg = document.getElementById("switchTheme").getElementsByTagName('img')[0];
+
+const themeButtons = Array.prototype.slice.call(document.getElementById("switchThemeMenu").getElementsByTagName('button'));
 
 function startChat(){
 	console.log(inp);
@@ -13,6 +15,16 @@ function startChat(){
 		open("./chat/?"+inp, "_self");
 	}else{
 		open("./chat/", "_self");
+	}
+}
+
+function startVChat() {
+	console.log(inp);
+	
+	if(inp!=""){
+		open("./stream/?"+inp, "_self");
+	}else{
+		open("./stream/", "_self");
 	}
 }
 
@@ -41,47 +53,65 @@ function goDown() {
 	document.body.scrollTo(0, document.body.clientHeight);
 }
 
-if (localStorage.getItem("theme") === null) {
-	if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-		localStorage.setItem("theme", "dark");
-		setDarkTheme();
-	} else {
-		localStorage.setItem("theme", "light");
-		setLightTheme();
-	}
-} else {
-	if (localStorage.getItem("theme") == "dark") {
-		setDarkTheme();
-	} else {
-		setLightTheme();
+function updateTheme() {
+	themeButtons.forEach(e => {
+		e.classList.remove("themeSelected");
+	});
+	switch (localStorage.getItem("theme")) {
+		case null:
+			localStorage.setItem("theme", "system");
+		case "system":
+			if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+				setDarkTheme();
+			} else {
+				setLightTheme();
+			}
+			themeButtons[0].classList.add("themeSelected");
+			break;
+		case "dark":
+			setDarkTheme();
+			themeButtons[2].classList.add("themeSelected");
+			break;
+		case "light":
+			setLightTheme();
+			themeButtons[1].classList.add("themeSelected");
+			break;
 	}
 }
 
+updateTheme();
+
 function setDarkTheme() {
-	document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')[0].setAttribute('href', './res/dark_favicon.png');
+	document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')[0].setAttribute('href', './res/imgs/dark_favicon.png');
 	document.body.classList.add("darkTheme");
-	themeControllerImg.src = "./res/light.svg";
+	themeControllerImg.src = "./res/imgs/light.svg";
 	console.log("Установлена тёмная тема");
 }
 
 function setLightTheme() {
-	document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')[0].setAttribute('href', './res/favicon.png');
+	document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')[0].setAttribute('href', './res/imgs/favicon.png');
 	document.body.classList.remove("darkTheme");
-	themeControllerImg.src = "./res/dark.svg";
+	themeControllerImg.src = "./res/imgs/dark.svg";
 	console.log("Установлена светлая тема");
 }
 
 function switchTheme () {
 	switch (localStorage.getItem("theme")) {
+		case "system":
+			if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+				localStorage.setItem("theme", "light");
+			} else {
+				localStorage.setItem("theme", "dark");
+			}
+			break;
 		case "dark":
 			localStorage.setItem("theme", "light");
-			setLightTheme();
 			break;
 		case "light":
 			localStorage.setItem("theme", "dark");
-			setDarkTheme();
 			break;
 	}
+	updateTheme();
 }
 
 document.body.addEventListener('scroll', function() {
