@@ -342,7 +342,7 @@ func Speaker(w http.ResponseWriter, r *http.Request) {
 				}
 				mess = easy.Message{}
 				continue
-			// case 9: // Смена UID
+			//  case 9: // Смена UID
 			// 	if chatID != "" {
 			// 		users.ChangeUserID(chatID, cuser.UID, cuser.UID mess.Tag)
 			// 	}
@@ -354,7 +354,10 @@ func Speaker(w http.ResponseWriter, r *http.Request) {
 					UIDs := users.GetOtherUIDs(chatID, cuser.UID)
 					cuser.Lock()
 					for i := 0; i < len(UIDs); i++ {
-						cuser.Conn.WriteJSON(easy.Message{Code: 10, Text: UIDs[i].UID, Tag: UIDs[i].PageType, Time: mess.Time})
+						cuser.Conn.WriteJSON(easy.Message{Code: 10, Text: UIDs[i].UID, Tag: "", Time: mess.Time})
+						if UIDs[i].Name != "" {
+							cuser.Conn.WriteJSON(easy.Message{Code: 15, Text: UIDs[i].Name, Tag: UIDs[i].UID, Time: mess.Time})
+						}
 					}
 				}
 				cuser.Unlock()
@@ -380,7 +383,7 @@ func Speaker(w http.ResponseWriter, r *http.Request) {
 				})
 				mess = easy.Message{}
 				continue
-			case 13: // IceClient к клиенту
+			case 13: // IceCandidate к клиенту
 				cuser.Lock()
 				log.Println("Клиент:", cuser.UID, r.RemoteAddr+", чат:", chatID+". IceCandidate к", mess.Tag)
 				cuser.Unlock()
@@ -389,52 +392,17 @@ func Speaker(w http.ResponseWriter, r *http.Request) {
 				})
 				mess = easy.Message{}
 				continue
-
-			// case 11: // Ответ на запрос трансляции (answer)
-			// 	offeredUserIndex, err := strconv.Atoi(mess.Tag)
-			// 	if err != nil || offeredUserIndex < 0 || offeredUserIndex >= len(users.u[chatID]) {
-			// 		endConnection()
-			// 		log.Panic(r.RemoteAddr, "send impossible offeredUserIndex or", err)
-			// 	}
-			// 	users.u[chatID][offeredUserIndex].mux.Lock()
-			// 	log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Offer трансляции к клиенту", users.u[chatID][offeredUserIndex].i)
-			// 	out, err := json.Marshal(easy.Message{11, mess.Text, getHash([]byte(r.RemoteAddr)), time.Now().Format(easy.TimeLayout)})
-			// 	if err != nil {
-			// 		users.u[chatID][offeredUserIndex].mux.Unlock()
-			// 		endConnection()
-			// 		log.Printf("Error: %v", err)
-			// 	}
-			// 	users.u[chatID][offeredUserIndex].c.WriteMessage(1, out)
-			// 	mess = easy.Message{11, "ok", getHash([]byte("123")), "123"}
-			// 	users.u[chatID][offeredUserIndex].mux.Unlock()
-			// 	continue
-			// case 12:
-			// 	var requestedUser *user
-			// 	userFounded := false
-			// 	users.mux.Lock()
-			// 	for i := 0; i < len(users.u[chatID]); i++ {
-			// 		users.u[chatID][i].mux.Lock()
-			// 		if getHash([]byte(users.u[chatID][i].i)) == mess.Tag {
-			// 			userFounded = true
-			// 			requestedUser = users.u[chatID][i]
-			// 			users.u[chatID][i].mux.Unlock()
-			// 			break
-			// 		}
-			// 		users.u[chatID][i].mux.Unlock()
-			// 	}
-			// 	if !userFounded {
-			// 		mess = easy.Message{12, mess.Text, getHash([]byte(r.RemoteAddr)), time.Now().Format(easy.TimeLayout)}
-			// 	}
-			// 	users.mux.Unlock()
-			// 	log.Println("Клиент:", r.RemoteAddr+", чат:", chatID+". Offer трансляции к клиенту", requestedUser.i)
-			// 	out, err := json.Marshal(easy.Message{12, mess.Text, getHash([]byte(r.RemoteAddr)), time.Now().Format(easy.TimeLayout)})
-			// 	if err != nil {
-			// 		endConnection()
-			// 		log.Printf("Error: %v", err)
-			// 	}
-			// 	requestedUser.c.WriteMessage(1, out)
-			// 	requestedUser.mux.Unlock()
-			// 	continue
+			case 15: // Изменение имени
+				cuser.Lock()
+				log.Println("Клиент:", cuser.UID, r.RemoteAddr+", чат:", chatID+". Изменил имя на", mess.Text)
+				mess.Tag = cuser.UID
+				cuser.Name = mess.Text
+				cuser.Unlock()
+				users.ForeachExeptMe(chatID, cuser.UID, func(u *users.User) error {
+					return u.Conn.WriteJSON(mess)
+				})
+				mess = easy.Message{}
+				continue
 			default:
 				mess = easy.Message{Code: 1, Text: "Неправильное обращение, повторите попытку (400)", Tag: "", Time: time.Now().Format(easy.TimeLayout)}
 			}

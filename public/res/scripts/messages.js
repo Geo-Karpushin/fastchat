@@ -181,46 +181,51 @@ socket.addEventListener("message", (msg) => {
 					nextPic = mess.text;
 				}
 				break;
-			// case 7:
-			// 	themeSet = true;
-			// 	lastKnownTheme = mess.text;
-			// 	if (mess.text == "0") {
-			// 		lastKnownTheme = 0;
-			// 		setLightTheme();
-			// 	} else {
-			// 		lastKnownTheme = 1;
-			// 		setDarkTheme();
-			// 	}
-			// 	break;
-			// case 9:
-			// 	users
 			case 10:
 				addMessage({code: 1, text: `Теперь вы в чате вместе с ${mess.text}`, tag: "INFO", time: goodDate(new Date())});
                 if (pagetype == "stream" && mess.tag == "stream") {
-                    addRemoteClient(mess.text);
+					establishConnection(mess.text);
                 }
 				break;
 			case 11:
                 if (pagetype == "chat") {
 				    addMessage({code: 1, text: `В вашем чате началась видеоконференция!\nПрисоединиться к конференции: https://fastchat.space/stream/?${id}`, tag: "INFO", time: goodDate(new Date())});
                 } else if (pagetype == "stream") {
-                    appendOffer(mess.text, mess.tag, mess.time);
+					try {
+                    	appendOffer(mess.tag, JSON.parse(mess.text));
+					} catch (error) {
+						console.error(error);
+					}
                 }
                 break;
 			case 12:
                 if (pagetype == "stream") {
-                    appendAnswer(mess.text, mess.tag);
+					try {
+						appendAnswer(mess.tag, JSON.parse(mess.text));
+					} catch (error) {
+						console.error(error);
+					}
                 }
 				break;
 			case 13:
                 if (pagetype == "stream") {
-                    appendIceCandidate(mess.text, mess.tag);
+					try {
+						appendICECandidate(mess.tag, JSON.parse(mess.text));
+					} catch (error) {
+						console.error(error);
+					}
                 }
 				break;
 			case 14:
 				addMessage({code: 1, text: `${mess.text} покинул чат`, tag: "INFO", time: goodDate(new Date())});
                 if (pagetype == "stream") {
-                    removeWRTCConnection(mess.text);
+                    closeConnection(mess.text);
+                }
+				break;
+			case 15:
+				addMessage({code: 1, text: `${mess.tag} задал себе имя ${mess.text}`, tag: "INFO", time: goodDate(new Date())});
+                if (pagetype == "stream") {
+                    changeName(mess.tag, mess.text, 0);
                 }
 				break;
 		}
@@ -473,6 +478,7 @@ function applySettings() {
 	}
 	if (lastKnownTag != setTag.value) { // Новый тэг
 		lastKnownTag = setTag.value;
+		socket.send(JSON.stringify({ code: 15, text: lastKnownTag, tag: "", time: goodDate(new Date())}));
 	}
 }
 

@@ -15,6 +15,7 @@ type User struct {
 	sync.Mutex
 	Conn          *websocket.Conn
 	UID           string
+	Name          string
 	PageType      string
 	EndConnection *func()
 }
@@ -95,6 +96,7 @@ func DEL(CID string, UID string) (success bool) {
 func GetOtherUIDs(CID, cUID string) (UIDS []struct {
 	UID      string
 	PageType string
+	Name     string
 }) {
 	chats.Lock()
 	log.Println("GetOterUIDs closed chats")
@@ -104,7 +106,8 @@ func GetOtherUIDs(CID, cUID string) (UIDS []struct {
 				UIDS = append(UIDS, struct {
 					UID      string
 					PageType string
-				}{UID: UID, PageType: chats.c[CID][UID].PageType})
+					Name     string
+				}{UID: UID, PageType: chats.c[CID][UID].PageType, Name: chats.c[CID][UID].Name})
 			}
 		}
 	}

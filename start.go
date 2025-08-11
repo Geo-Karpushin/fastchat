@@ -19,8 +19,8 @@ type Question struct {
 
 //=================CONFIG=================\\
 
-const version string = "v0.5.0"
-const updateDay string = "23.11.2024"
+const version string = "pre v1.0.0"
+const updateDay string = "11.08.2025"
 
 const HTTPSport string = "443"
 const HTTPport string = "80"
@@ -38,9 +38,12 @@ speaker
 5 - проверить пароль
 6 - запрос файла
 7 - смена темы
-10 - начало трансляции
-11 - новый фрагмент
-12 - конец трансляции
+10 - запрос UIDs клиентов
+11 - offer к клиенту
+12 - answer к клиенту
+13 - IceCandidate к клиенту
+15 - изменение имени
+
 
 Запросы от сервера:
 0 - установка подключения (сменить ID с перезагрузкой)
@@ -49,7 +52,12 @@ speaker
 3 - сменить ID без перезагрузки страницы
 5 - проверить пароль (запрос)
 6 - отправка имени файла
-7 - назначение темы
+10 - подключение к чату клиента
+11 - offer от клиента (уведомление о начале конференции)
+12 - answer от клиента
+13 - IceCandidate от клиента
+14 - выход клиента из чата
+15 - изменение имени клиента
 */
 
 //=================CODE===================\\
@@ -112,7 +120,7 @@ func main() {
 			log.Printf("Ошибка ListenAndServe: %v", err)
 		}
 	}()
-	// log.Fatal(http.ListenAndServe(":3000", nil))
+	// log.Fatal(http.ListenAndServe(":2025", nil))
 	log.Fatal(http.ListenAndServeTLS(":"+HTTPSport, "sertificate/cert.pem", "sertificate/privkey.pem", nil))
 }
 

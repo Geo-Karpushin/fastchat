@@ -64,6 +64,8 @@ body {
     margin-top: -4.25vh;
     text-align: left;
     font-size: 2vh;
+	font-weight: 650;
+    text-shadow: -0.5px -0.5px 0 #ffffff, 0.5px -0.5px 0 #ffffff, -0.5px 0.5px 0 #ffffff, 0.5px 0.5px 0 #ffffff;
 }
 
 #video-content {

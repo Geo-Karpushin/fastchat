@@ -427,7 +427,7 @@ body {
 #qr img {
     height: 50vmin;
     max-height: 50vmin;
-	border: 2px white solid
+	border: 0.5vmin white solid;
 }
 
 #password-menu {
